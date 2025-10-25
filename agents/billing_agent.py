@@ -31,17 +31,12 @@ class BillingAgent:
             temperature=0.3,
         )
     
-    async def process_load_billing(
-        self,
-        load: Load,
-        auto_approve: bool = False
-    ) -> Optional[Invoice]:
+    async def process_load_billing(self, load: Load) -> Optional[Invoice]:
         """
-        Process billing for a completed load.
+        Process billing for a completed load (MVP core flow).
         
         Args:
             load: Load object
-            auto_approve: Auto-approve charges with high confidence
             
         Returns:
             Invoice object or None
@@ -49,65 +44,41 @@ class BillingAgent:
         try:
             logger.info(f"Processing billing for load {load.id}")
             
-            # Calculate all charges
+            # Calculate charges
             charges = self.charge_calculator.calculate_all_charges(load)
-            
             if not charges:
-                logger.warning(f"No charges calculated for load {load.id}")
+                logger.warning(f"No charges for load {load.id}")
                 return None
             
-            # AI validation of charges
-            validation = await self.validate_charges(load, charges)
-            
-            if not validation.get("approved", False):
-                logger.warning(
-                    f"Charges not approved by AI: {validation.get('reason')}"
-                )
-                # Save charges but mark for review
-                for charge in charges:
-                    charge.requires_human_review = True
-                    self.db.add(charge)
-                self.db.commit()
+            # AI validation
+            if not await self.validate_charges(load, charges):
+                logger.warning(f"Charges rejected by AI for load {load.id}")
                 return None
             
             # Save charges
             for charge in charges:
-                charge.is_approved = auto_approve or charge.ai_confidence_score >= 0.9
-                charge.ai_notes = validation.get("notes", "")
                 self.db.add(charge)
-            
             self.db.commit()
             
-            # Generate invoice
-            customer = load.customer
-            
-            if customer.auto_invoice:
+            # Generate invoice if customer has auto_invoice enabled
+            if load.customer.auto_invoice:
                 invoice = self.invoice_generator.create_invoice_from_load(
                     load=load,
                     charges=charges,
                     auto_send=True
                 )
                 
-                if invoice:
-                    # Sync to QuickBooks
-                    if customer.quickbooks_customer_id:
-                        self.invoice_generator.sync_to_quickbooks(invoice)
-                    
-                    # Send alert
-                    self.alert_service.create_invoice_alert(invoice, customer)
-                    
-                    logger.info(
-                        f"Created invoice {invoice.invoice_number} for load {load.id}"
-                    )
-                    
-                    return invoice
-            else:
-                logger.info(f"Customer has auto_invoice disabled, skipping invoice creation")
+                # Sync to QuickBooks if configured
+                if invoice and load.customer.quickbooks_customer_id:
+                    self.invoice_generator.sync_to_quickbooks(invoice)
+                
+                logger.info(f"Invoice {invoice.invoice_number} created for load {load.id}")
+                return invoice
             
             return None
             
         except Exception as e:
-            logger.error(f"Error processing load billing: {e}")
+            logger.error(f"Error processing billing: {e}")
             self.db.rollback()
             return None
     
