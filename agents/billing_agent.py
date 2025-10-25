@@ -82,95 +82,45 @@ class BillingAgent:
             self.db.rollback()
             return None
     
-    async def validate_charges(
-        self,
-        load: Load,
-        charges: List[Charge]
-    ) -> Dict[str, Any]:
+    async def validate_charges(self, load: Load, charges: List[Charge]) -> bool:
         """
-        Use AI to validate calculated charges.
+        AI validation of calculated charges.
         
         Args:
             load: Load object
             charges: List of calculated charges
             
         Returns:
-            Validation result dictionary
+            True if approved, False otherwise
         """
         try:
-            # Prepare data for AI
-            load_data = {
-                "load_number": load.mcleod_load_number,
-                "container_number": load.container_number,
-                "pickup_date": load.pickup_date.isoformat() if load.pickup_date else None,
-                "delivery_date": load.actual_delivery_date.isoformat() if load.actual_delivery_date else None,
-                "base_freight_rate": float(load.base_freight_rate) if load.base_freight_rate else 0,
-            }
+            # Prepare charge summary
+            charges_summary = [
+                f"{c.charge_type.value}: ${c.amount:.2f} ({c.quantity} x ${c.rate:.2f})"
+                for c in charges
+            ]
+            total = sum(c.amount for c in charges)
             
-            charges_data = []
-            for charge in charges:
-                charges_data.append({
-                    "type": charge.charge_type.value,
-                    "description": charge.description,
-                    "rate": float(charge.rate),
-                    "quantity": float(charge.quantity),
-                    "amount": float(charge.amount),
-                    "confidence": float(charge.ai_confidence_score) if charge.ai_confidence_score else 0,
-                })
+            # Simple AI validation prompt
+            prompt = f"""Review these trucking charges for reasonableness:
             
-            total_amount = sum(c.amount for c in charges)
+Load: {load.mcleod_load_number}
+Base Rate: ${load.base_freight_rate or 0:.2f}
+Charges:
+{chr(10).join(charges_summary)}
+Total: ${total:.2f}
+
+Respond APPROVED or REJECTED with brief reasoning."""
             
-            # Create prompt
-            prompt = ChatPromptTemplate.from_messages([
-                SystemMessage(content="""You are an expert billing auditor for trucking and logistics.
-                Review the calculated charges for accuracy and reasonableness.
-                Consider:
-                - Are the charge types appropriate?
-                - Are the rates reasonable for industry standards?
-                - Are the quantities (days, etc.) calculated correctly?
-                - Is the total amount reasonable for this type of load?
-                - Are there any red flags or unusual patterns?
-                
-                Respond with:
-                - APPROVED or REJECTED
-                - Detailed reasoning
-                - Any concerns or recommendations
-                """),
-                HumanMessage(content=f"""
-                Load: {load_data}
-                Charges: {charges_data}
-                Total Amount: ${total_amount:.2f}
-                
-                Please validate these charges.
-                """)
-            ])
+            response = await self.llm.ainvoke([{"role": "user", "content": prompt}])
+            approved = "APPROVED" in response.content.upper()[:50]
             
-            # Get AI validation
-            response = await self.llm.ainvoke(prompt.format_messages())
-            
-            content = response.content.upper()
-            approved = "APPROVED" in content[:100] and "REJECTED" not in content[:100]
-            
-            validation = {
-                "approved": approved,
-                "reasoning": response.content,
-                "total_amount": total_amount,
-                "timestamp": datetime.utcnow().isoformat(),
-            }
-            
-            logger.info(
-                f"AI validation for load {load.id}: "
-                f"{'APPROVED' if approved else 'REJECTED'}"
-            )
-            
-            return validation
+            logger.info(f"Charge validation for load {load.id}: {'APPROVED' if approved else 'REJECTED'}")
+            return approved
             
         except Exception as e:
-            logger.error(f"Error validating charges: {e}")
-            return {
-                "approved": False,
-                "reason": f"Validation error: {str(e)}",
-            }
+            logger.error(f"Validation error: {e}")
+            return False
     
     async def analyze_billing_patterns(
         self,
