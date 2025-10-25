@@ -1,17 +1,14 @@
-"""AI Agent for billing and invoice generation."""
+"""AI Agent for billing and invoice generation - MVP Version."""
 import logging
-from datetime import datetime, date
-from typing import List, Dict, Optional, Any
+from datetime import datetime
+from typing import List, Optional
 
 from langchain_anthropic import ChatAnthropic
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema import HumanMessage, SystemMessage
 from sqlalchemy.orm import Session
 
-from models import Load, Container, Customer, Charge, Invoice, InvoiceStatus
+from models import Load, Customer, Charge, Invoice
 from services.charge_calculator import ChargeCalculator
 from services.invoice_generator import InvoiceGenerator
-from services.alert_service import AlertService
 from config import get_settings
 
 logger = logging.getLogger(__name__)
