@@ -16,19 +16,13 @@ settings = get_settings()
 
 
 class BillingAgent:
-    """AI Agent for automated billing and invoicing."""
+    """AI Agent for automated billing and invoicing - MVP core functions only."""
     
     def __init__(self, db: Session):
-        """
-        Initialize billing agent.
-        
-        Args:
-            db: Database session
-        """
+        """Initialize billing agent with essential services."""
         self.db = db
         self.charge_calculator = ChargeCalculator(db)
         self.invoice_generator = InvoiceGenerator(db)
-        self.alert_service = AlertService(db)
         
         # Initialize Claude LLM
         self.llm = ChatAnthropic(
