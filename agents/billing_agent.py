@@ -29,17 +29,12 @@ class BillingAgent:
     async def process_load_billing(self, load: Load) -> Optional[Invoice]:
         """Process billing for a completed load."""
         try:
-            # Calculate and validate charges
             charges = self.charge_calculator.calculate_all_charges(load)
             if not charges or not await self.validate_charges(load, charges):
                 return None
             
-            # Save charges to database
-            for charge in charges:
-                self.db.add(charge)
-            self.db.commit()
+            self._save_charges(charges)
             
-            # Generate invoice if auto-invoicing is enabled
             if not load.customer.auto_invoice:
                 return None
             
@@ -47,7 +42,6 @@ class BillingAgent:
                 load=load, charges=charges, auto_send=True
             )
             
-            # Sync to QuickBooks if configured
             if invoice and load.customer.quickbooks_customer_id:
                 self.invoice_generator.sync_to_quickbooks(invoice)
             
@@ -57,6 +51,12 @@ class BillingAgent:
             logger.error(f"Error processing load {load.id}: {e}")
             self.db.rollback()
             return None
+    
+    def _save_charges(self, charges: List[Charge]) -> None:
+        """Save charges to database."""
+        for charge in charges:
+            self.db.add(charge)
+        self.db.commit()
     
     async def validate_charges(self, load: Load, charges: List[Charge]) -> bool:
         """AI validation of calculated charges."""
