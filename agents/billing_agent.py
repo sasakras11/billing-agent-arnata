@@ -60,18 +60,14 @@ class BillingAgent:
     
     async def validate_charges(self, load: Load, charges: List[Charge]) -> bool:
         """AI validation of calculated charges."""
-        charges_summary = "\n".join([
-            f"{c.charge_type.value}: ${c.amount:.2f}"
-            for c in charges
-        ])
+        charges_text = "\n".join(f"{c.charge_type.value}: ${c.amount:.2f}" for c in charges)
         total = sum(c.amount for c in charges)
         
-        prompt = f"""Review these charges for load {load.mcleod_load_number}:
-{charges_summary}
-Total: ${total:.2f}
-Base Rate: ${load.base_freight_rate or 0:.2f}
+        prompt = f"""Review charges for load {load.mcleod_load_number}:
+{charges_text}
+Total: ${total:.2f} (Base: ${load.base_freight_rate or 0:.2f})
 
-Reply APPROVED or REJECTED."""
+Reply: APPROVED or REJECTED"""
         
         response = await self.llm.ainvoke([{"role": "user", "content": prompt}])
         return "APPROVED" in response.content.upper()[:50]
