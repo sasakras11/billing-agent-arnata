@@ -22,17 +22,15 @@ class BillingAgent:
     def process_load_billing(self, load: Load) -> Optional[Invoice]:
         """Process billing for a completed load."""
         try:
-            # Calculate charges
+            # Calculate and save charges
             charges = self.charge_calculator.calculate_all_charges(load)
             if not charges:
                 return None
             
-            # Save charges
-            for charge in charges:
-                self.db.add(charge)
+            self.db.add_all(charges)
             self.db.commit()
             
-            # Generate invoice if auto-invoice enabled
+            # Auto-invoice if enabled
             if not load.customer.auto_invoice:
                 return None
             
@@ -40,7 +38,7 @@ class BillingAgent:
                 load=load, charges=charges, auto_send=True
             )
             
-            # Sync to QuickBooks if configured
+            # Sync to QuickBooks
             if invoice and load.customer.quickbooks_customer_id:
                 self.invoice_generator.sync_to_quickbooks(invoice)
             
