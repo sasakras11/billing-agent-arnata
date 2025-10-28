@@ -1,7 +1,6 @@
 """Simple billing agent for invoice generation."""
 import logging
 from typing import Optional
-
 from sqlalchemy.orm import Session
 
 from models import Load, Invoice
@@ -22,7 +21,6 @@ class BillingAgent:
     def process_load_billing(self, load: Load) -> Optional[Invoice]:
         """Process billing for a completed load."""
         try:
-            # Calculate and save charges
             charges = self.charge_calculator.calculate_all_charges(load)
             if not charges:
                 return None
@@ -30,7 +28,6 @@ class BillingAgent:
             self.db.add_all(charges)
             self.db.commit()
             
-            # Auto-invoice if enabled
             if not load.customer.auto_invoice:
                 return None
             
@@ -38,7 +35,6 @@ class BillingAgent:
                 load=load, charges=charges, auto_send=True
             )
             
-            # Sync to QuickBooks
             if invoice and load.customer.quickbooks_customer_id:
                 self.invoice_generator.sync_to_quickbooks(invoice)
             
