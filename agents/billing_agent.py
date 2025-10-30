@@ -1,4 +1,3 @@
-"""Simple billing agent for invoice generation."""
 import logging
 from sqlalchemy.orm import Session
 
