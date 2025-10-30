@@ -19,11 +19,9 @@ class BillingAgent:
     def process_load_billing(self, load: Load) -> Invoice | None:
         try:
             charges = self.charge_calculator.calculate_all_charges(load)
-            if not charges:
-                return None
-            
-            self.db.add_all(charges)
-            self.db.commit()
+            if charges:
+                self.db.add_all(charges)
+                self.db.commit()
             
             if not load.customer.auto_invoice:
                 return None
