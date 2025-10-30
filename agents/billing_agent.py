@@ -7,7 +7,6 @@ from services.invoice_generator import InvoiceGenerator
 
 logger = logging.getLogger(__name__)
 
-
 class BillingAgent:
     
     def __init__(self, db: Session):
