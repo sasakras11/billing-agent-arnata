@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class BillingAgent:
-    """Simple billing agent for automated invoicing."""
     
     def __init__(self, db: Session):
         self.db = db
@@ -18,7 +17,6 @@ class BillingAgent:
         self.invoice_generator = InvoiceGenerator(db)
     
     def process_load_billing(self, load: Load) -> Invoice | None:
-        """Process billing for a completed load."""
         try:
             charges = self.charge_calculator.calculate_all_charges(load)
             if not charges:
