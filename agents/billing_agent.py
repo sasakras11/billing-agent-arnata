@@ -1,6 +1,5 @@
 """Simple billing agent for invoice generation."""
 import logging
-from typing import Optional
 from sqlalchemy.orm import Session
 
 from models import Load, Invoice
@@ -18,7 +17,7 @@ class BillingAgent:
         self.charge_calculator = ChargeCalculator(db)
         self.invoice_generator = InvoiceGenerator(db)
     
-    def process_load_billing(self, load: Load) -> Optional[Invoice]:
+    def process_load_billing(self, load: Load) -> Invoice | None:
         """Process billing for a completed load."""
         try:
             charges = self.charge_calculator.calculate_all_charges(load)
