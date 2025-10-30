@@ -36,7 +36,7 @@ class BillingAgent:
             return invoice
             
         except Exception as e:
-            logger.error(f"Error processing load {load.id}: {e}")
             self.db.rollback()
+            logger.error(f"Billing error for load {load.id}: {e}")
             return None
 
