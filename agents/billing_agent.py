@@ -27,7 +27,7 @@ class BillingAgent:
                 return None
             
             invoice = self.invoice_generator.create_invoice_from_load(
-                load=load, charges=charges, auto_send=True
+                load, charges, auto_send=True
             )
             
             if invoice and load.customer.quickbooks_customer_id:
