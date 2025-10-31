@@ -8,6 +8,7 @@ from services.invoice_generator import InvoiceGenerator
 logger = logging.getLogger(__name__)
 
 class BillingAgent:
+    """Agent responsible for processing load billing and invoice generation."""
     
     def __init__(self, db: Session):
         self.db = db
