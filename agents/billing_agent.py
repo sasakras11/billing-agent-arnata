@@ -16,6 +16,15 @@ class BillingAgent:
         self.invoice_generator = InvoiceGenerator(db)
     
     def process_load_billing(self, load: Load) -> Invoice | None:
+        """
+        Process billing for a load by calculating charges and generating an invoice.
+        
+        Args:
+            load: The load to process billing for
+            
+        Returns:
+            Invoice if generated, None otherwise
+        """
         try:
             charges = self.charge_calculator.calculate_all_charges(load)
             if charges:
