@@ -1,50 +1,203 @@
 import logging
-from sqlalchemy.orm import Session
+from typing import Optional
 
-from models import Load, Invoice
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+
+from models import Load, Invoice, Charge
 from services.charge_calculator import ChargeCalculator
 from services.invoice_generator import InvoiceGenerator
+from exceptions import (
+    ChargeCalculationError,
+    InvoiceGenerationError,
+    QuickBooksAPIError,
+    DatabaseError,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class BillingAgent:
     """Agent responsible for processing load billing and invoice generation."""
     
     def __init__(self, db: Session):
+        """
+        Initialize billing agent.
+        
+        Args:
+            db: SQLAlchemy database session
+        """
         self.db = db
         self.charge_calculator = ChargeCalculator(db)
         self.invoice_generator = InvoiceGenerator(db)
     
-    def process_load_billing(self, load: Load) -> Invoice | None:
+    def process_load_billing(
+        self,
+        load: Load,
+        auto_send: bool = True
+    ) -> Optional[Invoice]:
         """
         Process billing for a load by calculating charges and generating an invoice.
         
+        This method:
+        1. Calculates all applicable charges for the load
+        2. Saves charges to database
+        3. Generates invoice if customer has auto-invoicing enabled
+        4. Syncs invoice to QuickBooks if customer is configured
+        
         Args:
             load: The load to process billing for
+            auto_send: Whether to automatically send invoice to customer
             
         Returns:
             Invoice if generated, None otherwise
-        """
-        try:
-            charges = self.charge_calculator.calculate_all_charges(load)
-            if charges:
-                self.db.add_all(charges)
-                self.db.commit()
             
+        Raises:
+            ChargeCalculationError: If charge calculation fails
+            InvoiceGenerationError: If invoice generation fails
+            DatabaseError: If database operations fail
+        """
+        logger.info(f"Processing billing for load {load.id}")
+        
+        try:
+            # Calculate all charges
+            charges = self._calculate_charges(load)
+            
+            # Save charges to database
+            if charges:
+                self._save_charges(charges)
+                logger.info(
+                    f"Saved {len(charges)} charges for load {load.id}, "
+                    f"total: ${sum(c.amount for c in charges):.2f}"
+                )
+            else:
+                logger.warning(f"No charges calculated for load {load.id}")
+            
+            # Check if customer wants auto-invoicing
             if not load.customer.auto_invoice:
+                logger.info(
+                    f"Auto-invoicing disabled for customer {load.customer.name}"
+                )
                 return None
             
-            invoice = self.invoice_generator.create_invoice_from_load(
-                load, charges, auto_send=True
-            )
+            # Generate invoice
+            invoice = self._generate_invoice(load, charges, auto_send)
             
+            # Sync to QuickBooks if configured
             if invoice and load.customer.quickbooks_customer_id:
-                self.invoice_generator.sync_to_quickbooks(invoice)
+                self._sync_to_quickbooks(invoice)
+            
+            logger.info(
+                f"Successfully processed billing for load {load.id}, "
+                f"invoice: {invoice.id if invoice else 'N/A'}"
+            )
             
             return invoice
             
+        except (ChargeCalculationError, InvoiceGenerationError) as e:
+            # Expected errors - already logged, just re-raise
+            raise
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            logger.error(f"Database error processing load {load.id}: {e}")
+            raise DatabaseError(f"Database error processing load {load.id}") from e
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Billing error for load {load.id}: {e}")
-            return None
+            logger.error(f"Unexpected error processing load {load.id}: {e}", exc_info=True)
+            raise
+    
+    def _calculate_charges(self, load: Load) -> list[Charge]:
+        """
+        Calculate all charges for a load.
+        
+        Args:
+            load: Load to calculate charges for
+            
+        Returns:
+            List of calculated charges
+            
+        Raises:
+            ChargeCalculationError: If calculation fails
+        """
+        try:
+            charges = self.charge_calculator.calculate_all_charges(load)
+            return charges
+        except Exception as e:
+            logger.error(f"Failed to calculate charges for load {load.id}: {e}")
+            raise ChargeCalculationError(
+                f"Failed to calculate charges for load {load.id}"
+            ) from e
+    
+    def _save_charges(self, charges: list[Charge]) -> None:
+        """
+        Save charges to database.
+        
+        Args:
+            charges: List of charges to save
+            
+        Raises:
+            DatabaseError: If save fails
+        """
+        try:
+            self.db.add_all(charges)
+            self.db.commit()
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            logger.error(f"Failed to save charges: {e}")
+            raise DatabaseError("Failed to save charges") from e
+    
+    def _generate_invoice(
+        self,
+        load: Load,
+        charges: list[Charge],
+        auto_send: bool
+    ) -> Optional[Invoice]:
+        """
+        Generate invoice for load and charges.
+        
+        Args:
+            load: Load to invoice
+            charges: List of charges to include
+            auto_send: Whether to automatically send invoice
+            
+        Returns:
+            Generated invoice
+            
+        Raises:
+            InvoiceGenerationError: If generation fails
+        """
+        try:
+            invoice = self.invoice_generator.create_invoice_from_load(
+                load, charges, auto_send=auto_send
+            )
+            return invoice
+        except Exception as e:
+            logger.error(f"Failed to generate invoice for load {load.id}: {e}")
+            raise InvoiceGenerationError(
+                f"Failed to generate invoice for load {load.id}"
+            ) from e
+    
+    def _sync_to_quickbooks(self, invoice: Invoice) -> None:
+        """
+        Sync invoice to QuickBooks.
+        
+        Args:
+            invoice: Invoice to sync
+            
+        Raises:
+            QuickBooksAPIError: If sync fails
+        """
+        try:
+            self.invoice_generator.sync_to_quickbooks(invoice)
+            logger.info(f"Synced invoice {invoice.id} to QuickBooks")
+        except Exception as e:
+            # Log error but don't fail the whole operation
+            logger.error(
+                f"Failed to sync invoice {invoice.id} to QuickBooks: {e}",
+                exc_info=True
+            )
+            # Still raise so caller knows sync failed
+            raise QuickBooksAPIError(
+                f"Failed to sync invoice {invoice.id} to QuickBooks"
+            ) from e
 
