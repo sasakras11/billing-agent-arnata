@@ -11,6 +11,12 @@ from utils.date_helpers import (
     is_business_day,
     format_date_display,
 )
+from utils.retry import (
+    retry_with_backoff,
+    retry_async_with_backoff,
+    exponential_backoff,
+    RetryContext,
+)
 
 __all__ = [
     "validate_container_number",
@@ -21,5 +27,9 @@ __all__ = [
     "is_weekend",
     "is_business_day",
     "format_date_display",
+    "retry_with_backoff",
+    "retry_async_with_backoff",
+    "exponential_backoff",
+    "RetryContext",
 ]
 
