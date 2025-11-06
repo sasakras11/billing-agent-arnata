@@ -1,7 +1,8 @@
 """AI Agent for handling billing disputes."""
 import logging
 from datetime import datetime
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
+from enum import Enum
 
 from langchain_anthropic import ChatAnthropic
 from langchain.prompts import ChatPromptTemplate
@@ -10,9 +11,30 @@ from sqlalchemy.orm import Session
 
 from models import Invoice, Customer, Charge
 from config import get_settings
+from exceptions import InvoiceNotFoundError
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
+
+class DisputeCategory(str, Enum):
+    """Categories of dispute types."""
+    PRICING_ERROR = "pricing_error"
+    SERVICE_NOT_RENDERED = "service_not_rendered"
+    QUALITY_ISSUE = "quality_issue"
+    DUPLICATE_CHARGE = "duplicate_charge"
+    ALREADY_PAID = "already_paid"
+    CONTRACTUAL_DISAGREEMENT = "contractual_disagreement"
+    OTHER = "other"
+
+
+class DisputeSentiment(str, Enum):
+    """Sentiment analysis of customer dispute."""
+    POSITIVE = "positive"
+    NEUTRAL = "neutral"
+    FRUSTRATED = "frustrated"
+    ANGRY = "angry"
+    THREATENING = "threatening"
 
 
 class DisputeAgent:
@@ -340,5 +362,242 @@ class DisputeAgent:
             
         except Exception as e:
             logger.error(f"Error suggesting resolution: {e}")
+            return {"error": str(e)}
+    
+    async def analyze_dispute_sentiment(
+        self,
+        customer_message: str
+    ) -> Dict[str, Any]:
+        """
+        Analyze sentiment and urgency of customer dispute message.
+        
+        Args:
+            customer_message: Customer's dispute message
+            
+        Returns:
+            Sentiment analysis results
+        """
+        try:
+            # Create prompt
+            prompt = ChatPromptTemplate.from_messages([
+                SystemMessage(content="""You are a sentiment analysis expert.
+                Analyze the customer's message and determine:
+                1. Sentiment: positive, neutral, frustrated, angry, or threatening
+                2. Urgency level: low, medium, high, or critical
+                3. Key concerns mentioned
+                4. Tone indicators
+                
+                Return a JSON response with:
+                {
+                    "sentiment": "frustrated",
+                    "urgency": "high",
+                    "key_concerns": ["billing error", "lack of documentation"],
+                    "tone_indicators": ["stern language", "deadline mentioned"],
+                    "recommended_response_time": "within 4 hours"
+                }
+                """),
+                HumanMessage(content=f"Analyze this customer message:\n\n{customer_message}")
+            ])
+            
+            # Get AI analysis
+            response = await self.llm.ainvoke(prompt.format_messages())
+            
+            # Parse response (assuming structured output)
+            analysis = {
+                "customer_message": customer_message,
+                "sentiment_analysis": response.content,
+                "analyzed_at": datetime.utcnow().isoformat(),
+            }
+            
+            logger.info("Analyzed customer dispute sentiment")
+            return analysis
+            
+        except Exception as e:
+            logger.error(f"Error analyzing sentiment: {e}")
+            return {"error": str(e)}
+    
+    async def categorize_dispute(
+        self,
+        dispute_description: str,
+        invoice: Optional[Invoice] = None
+    ) -> Dict[str, Any]:
+        """
+        Categorize the type of dispute.
+        
+        Args:
+            dispute_description: Description of the dispute
+            invoice: Optional related invoice for context
+            
+        Returns:
+            Dispute categorization results
+        """
+        try:
+            context = {"dispute_description": dispute_description}
+            
+            if invoice:
+                context["invoice_amount"] = float(invoice.total_amount)
+                context["charges"] = [
+                    {
+                        "type": c.charge_type.value,
+                        "amount": float(c.amount),
+                        "description": c.description,
+                    }
+                    for c in invoice.charges
+                ]
+            
+            # Create prompt
+            categories_list = [cat.value for cat in DisputeCategory]
+            
+            prompt = ChatPromptTemplate.from_messages([
+                SystemMessage(content=f"""You are a billing dispute categorization expert.
+                Categorize the dispute into one of these categories:
+                {', '.join(categories_list)}
+                
+                Provide:
+                1. Primary category
+                2. Confidence level (0-1)
+                3. Secondary categories if applicable
+                4. Reasoning for categorization
+                
+                Return structured response."""),
+                HumanMessage(content=f"Categorize this dispute:\n\n{context}")
+            ])
+            
+            # Get AI categorization
+            response = await self.llm.ainvoke(prompt.format_messages())
+            
+            categorization = {
+                "dispute_description": dispute_description,
+                "categorization": response.content,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+            
+            logger.info("Categorized dispute")
+            return categorization
+            
+        except Exception as e:
+            logger.error(f"Error categorizing dispute: {e}")
+            return {"error": str(e)}
+    
+    async def generate_dispute_summary(
+        self,
+        invoice: Invoice,
+        customer_messages: List[str]
+    ) -> Dict[str, Any]:
+        """
+        Generate executive summary of dispute conversation.
+        
+        Args:
+            invoice: Related invoice
+            customer_messages: List of customer messages in dispute thread
+            
+        Returns:
+            Summary of dispute conversation
+        """
+        try:
+            context = {
+                "invoice_number": invoice.invoice_number,
+                "customer_name": invoice.customer.name,
+                "invoice_amount": float(invoice.total_amount),
+                "messages": customer_messages,
+            }
+            
+            # Create prompt
+            prompt = ChatPromptTemplate.from_messages([
+                SystemMessage(content="""You are an executive assistant summarizing dispute cases.
+                Create a concise summary for management review that includes:
+                
+                1. Key facts (invoice #, amount, customer)
+                2. Customer's main concerns
+                3. Current status
+                4. Recommended actions
+                5. Risk level (low/medium/high)
+                
+                Keep summary under 200 words, focused on actionable insights."""),
+                HumanMessage(content=f"Summarize this dispute case:\n\n{context}")
+            ])
+            
+            # Get AI summary
+            response = await self.llm.ainvoke(prompt.format_messages())
+            
+            summary = {
+                "invoice_number": invoice.invoice_number,
+                "customer_name": invoice.customer.name,
+                "executive_summary": response.content,
+                "messages_reviewed": len(customer_messages),
+                "generated_at": datetime.utcnow().isoformat(),
+            }
+            
+            logger.info(f"Generated dispute summary for invoice {invoice.invoice_number}")
+            return summary
+            
+        except Exception as e:
+            logger.error(f"Error generating dispute summary: {e}")
+            return {"error": str(e)}
+    
+    async def calculate_goodwill_credit(
+        self,
+        invoice: Invoice,
+        customer_complaint: str,
+        customer_lifetime_value: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Calculate recommended goodwill credit amount.
+        
+        Args:
+            invoice: Related invoice
+            customer_complaint: Customer's complaint
+            customer_lifetime_value: Optional CLV for consideration
+            
+        Returns:
+            Goodwill credit recommendation
+        """
+        try:
+            context = {
+                "invoice_number": invoice.invoice_number,
+                "customer_name": invoice.customer.name,
+                "invoice_amount": float(invoice.total_amount),
+                "complaint": customer_complaint,
+                "customer_lifetime_value": customer_lifetime_value,
+            }
+            
+            # Create prompt
+            prompt = ChatPromptTemplate.from_messages([
+                SystemMessage(content="""You are a customer retention specialist.
+                Calculate appropriate goodwill credit considering:
+                
+                1. Severity of issue
+                2. Company's responsibility level
+                3. Customer lifetime value
+                4. Industry standards
+                5. Relationship preservation
+                
+                Recommend:
+                - Credit amount (specific dollar amount or percentage)
+                - Justification
+                - How to present it to customer
+                - Additional gestures if needed
+                
+                Balance customer satisfaction with profitability."""),
+                HumanMessage(content=f"Calculate goodwill credit for:\n\n{context}")
+            ])
+            
+            # Get AI recommendation
+            response = await self.llm.ainvoke(prompt.format_messages())
+            
+            recommendation = {
+                "invoice_number": invoice.invoice_number,
+                "customer_name": invoice.customer.name,
+                "goodwill_recommendation": response.content,
+                "calculated_at": datetime.utcnow().isoformat(),
+            }
+            
+            logger.info(
+                f"Calculated goodwill credit recommendation for invoice {invoice.invoice_number}"
+            )
+            return recommendation
+            
+        except Exception as e:
+            logger.error(f"Error calculating goodwill credit: {e}")
             return {"error": str(e)}
 
