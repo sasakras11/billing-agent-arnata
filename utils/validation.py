@@ -231,7 +231,8 @@ def validate_days(days: int, field_name: str = "Days") -> int:
 def validate_required_string(
     value: Optional[str],
     field_name: str,
-    max_length: Optional[int] = None
+    max_length: Optional[int] = None,
+    min_length: Optional[int] = None
 ) -> str:
     """
     Validate required string field.
@@ -240,6 +241,7 @@ def validate_required_string(
         value: String value to validate
         field_name: Name of field for error message
         max_length: Maximum allowed length
+        min_length: Minimum required length
         
     Returns:
         Validated string (stripped)
@@ -258,6 +260,12 @@ def validate_required_string(
     if not stripped:
         raise ValidationError(f"{field_name} cannot be empty or whitespace")
     
+    if min_length and len(stripped) < min_length:
+        raise ValidationError(
+            f"{field_name} must be at least {min_length} characters, "
+            f"got {len(stripped)}"
+        )
+    
     if max_length and len(stripped) > max_length:
         raise ValidationError(
             f"{field_name} must be at most {max_length} characters, "
@@ -265,4 +273,80 @@ def validate_required_string(
         )
     
     return stripped
+
+
+def validate_date_range(
+    start_date: Optional[date],
+    end_date: Optional[date],
+    field_prefix: str = "Date"
+) -> tuple[date, date]:
+    """
+    Validate that start date is before or equal to end date.
+    
+    Args:
+        start_date: Start date
+        end_date: End date
+        field_prefix: Prefix for error messages
+        
+    Returns:
+        Tuple of (start_date, end_date)
+        
+    Raises:
+        ValidationError: If dates are invalid
+    """
+    from datetime import date as date_type
+    
+    if start_date is None:
+        raise ValidationError(f"{field_prefix} start date is required")
+    
+    if end_date is None:
+        raise ValidationError(f"{field_prefix} end date is required")
+    
+    if not isinstance(start_date, date_type):
+        raise ValidationError(f"{field_prefix} start must be a date")
+    
+    if not isinstance(end_date, date_type):
+        raise ValidationError(f"{field_prefix} end must be a date")
+    
+    if start_date > end_date:
+        raise ValidationError(
+            f"{field_prefix} start ({start_date}) must be before or equal to "
+            f"end ({end_date})"
+        )
+    
+    return (start_date, end_date)
+
+
+def validate_percentage(
+    value: float,
+    field_name: str = "Percentage",
+    allow_over_100: bool = False
+) -> float:
+    """
+    Validate percentage value.
+    
+    Args:
+        value: Percentage value to validate
+        field_name: Name of field for error message
+        allow_over_100: Whether to allow values over 100%
+        
+    Returns:
+        Validated percentage
+        
+    Raises:
+        ValidationError: If percentage is invalid
+    """
+    if value is None:
+        raise ValidationError(f"{field_name} cannot be None")
+    
+    if not isinstance(value, (int, float)):
+        raise ValidationError(f"{field_name} must be a number, got {type(value)}")
+    
+    if value < 0:
+        raise ValidationError(f"{field_name} must be non-negative, got {value}")
+    
+    if not allow_over_100 and value > 100:
+        raise ValidationError(f"{field_name} must be at most 100%, got {value}")
+    
+    return float(value)
 
