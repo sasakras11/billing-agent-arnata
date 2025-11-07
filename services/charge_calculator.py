@@ -2,11 +2,13 @@
 import logging
 from datetime import date, datetime, timedelta
 from typing import List, Dict, Optional, Tuple
+from functools import lru_cache
 
 from sqlalchemy.orm import Session
 
 from models import Container, Customer, Load, Charge, ChargeType
 from config import get_settings
+from utils.validation import validate_positive_amount, validate_days
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -18,6 +20,7 @@ class ChargeCalculator:
     def __init__(self, db: Session):
         """Initialize calculator with database session."""
         self.db = db
+        self._rate_cache = {}  # Cache for customer rates
     
     def calculate_last_free_day(
         self,
@@ -61,6 +64,36 @@ class ChargeCalculator:
             logger.error(f"Error calculating last free day: {e}")
             return None
     
+    def _get_customer_rate(
+        self,
+        customer: Customer,
+        rate_type: str,
+        default_rate: float
+    ) -> float:
+        """
+        Get customer rate with caching and validation.
+        
+        Args:
+            customer: Customer object
+            rate_type: Type of rate (per_diem_rate, demurrage_rate, etc.)
+            default_rate: Default rate if customer rate not set
+            
+        Returns:
+            Validated rate
+        """
+        cache_key = f"{customer.id}_{rate_type}"
+        
+        if cache_key not in self._rate_cache:
+            rate = getattr(customer, rate_type, None) or default_rate
+            try:
+                validated_rate = validate_positive_amount(rate, rate_type, allow_zero=False)
+                self._rate_cache[cache_key] = validated_rate
+            except Exception as e:
+                logger.warning(f"Invalid rate for {rate_type}, using default: {e}")
+                self._rate_cache[cache_key] = default_rate
+        
+        return self._rate_cache[cache_key]
+    
     def calculate_per_diem(
         self,
         container: Container,
@@ -98,6 +131,7 @@ class ChargeCalculator:
                 # Calculate per diem start date
                 start_date = container.picked_up.date()
                 free_days = customer.per_diem_free_days or customer.free_days or settings.default_free_days
+                free_days = validate_days(free_days, "per_diem_free_days")
                 per_diem_start = start_date + timedelta(days=free_days)
             else:
                 per_diem_start = container.per_diem_starts
@@ -107,9 +141,10 @@ class ChargeCalculator:
                 return (0, 0.0)
             
             days = (end_date - per_diem_start).days
+            days = max(0, days)  # Ensure non-negative
             
-            # Calculate amount
-            rate = customer.per_diem_rate or settings.default_per_diem_rate
+            # Calculate amount with cached rate
+            rate = self._get_customer_rate(customer, 'per_diem_rate', settings.default_per_diem_rate)
             amount = days * rate
             
             logger.info(
@@ -159,6 +194,7 @@ class ChargeCalculator:
             if not container.demurrage_starts:
                 start_date = container.vessel_discharged.date()
                 free_days = customer.demurrage_free_days or settings.default_free_days
+                free_days = validate_days(free_days, "demurrage_free_days")
                 demurrage_start = start_date + timedelta(days=free_days)
             else:
                 demurrage_start = container.demurrage_starts
@@ -168,9 +204,10 @@ class ChargeCalculator:
                 return (0, 0.0)
             
             days = (end_date - demurrage_start).days
+            days = max(0, days)  # Ensure non-negative
             
-            # Calculate amount
-            rate = customer.demurrage_rate or settings.default_demurrage_rate
+            # Calculate amount with cached rate
+            rate = self._get_customer_rate(customer, 'demurrage_rate', settings.default_demurrage_rate)
             amount = days * rate
             
             logger.info(
@@ -226,9 +263,10 @@ class ChargeCalculator:
                 return (0, 0.0)
             
             days = (end_date - detention_start).days
+            days = max(0, days)  # Ensure non-negative
             
-            # Calculate amount
-            rate = customer.detention_rate or settings.default_detention_rate
+            # Calculate amount with cached rate
+            rate = self._get_customer_rate(customer, 'detention_rate', settings.default_detention_rate)
             amount = days * rate
             
             logger.info(
