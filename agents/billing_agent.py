@@ -1,10 +1,12 @@
 import logging
-from typing import Optional
+import time
+from typing import Optional, Dict, Any
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
-from models import Load, Invoice, Charge
+from models import Load, Invoice, Charge, ChargeType
 from services.charge_calculator import ChargeCalculator
 from services.invoice_generator import InvoiceGenerator
 from exceptions import (
@@ -57,6 +59,7 @@ class BillingAgent:
             InvoiceGenerationError: If invoice generation fails
             DatabaseError: If database operations fail
         """
+        start_time = time.time()
         logger.info(f"Processing billing for load {load.id}")
         
         try:
@@ -87,9 +90,11 @@ class BillingAgent:
             if invoice and load.customer.quickbooks_customer_id:
                 self._sync_to_quickbooks(invoice)
             
+            elapsed_time = time.time() - start_time
             logger.info(
                 f"Successfully processed billing for load {load.id}, "
-                f"invoice: {invoice.id if invoice else 'N/A'}"
+                f"invoice: {invoice.id if invoice else 'N/A'}, "
+                f"elapsed: {elapsed_time:.2f}s"
             )
             
             return invoice
@@ -200,4 +205,166 @@ class BillingAgent:
             raise QuickBooksAPIError(
                 f"Failed to sync invoice {invoice.id} to QuickBooks"
             ) from e
+    
+    def preview_charges(self, load: Load) -> Dict[str, Any]:
+        """
+        Preview charges for a load without saving to database.
+        
+        Args:
+            load: Load to preview charges for
+            
+        Returns:
+            Dictionary containing charge preview information
+            
+        Raises:
+            ChargeCalculationError: If charge calculation fails
+        """
+        logger.info(f"Previewing charges for load {load.id}")
+        
+        try:
+            charges = self._calculate_charges(load)
+            
+            # Organize charges by type
+            charges_by_type = {}
+            total_amount = Decimal('0.00')
+            
+            for charge in charges:
+                charge_type = charge.charge_type.value if hasattr(charge.charge_type, 'value') else str(charge.charge_type)
+                
+                if charge_type not in charges_by_type:
+                    charges_by_type[charge_type] = []
+                
+                charges_by_type[charge_type].append({
+                    'description': charge.description,
+                    'rate': float(charge.rate),
+                    'quantity': float(charge.quantity),
+                    'amount': float(charge.amount),
+                    'start_date': charge.start_date.isoformat() if charge.start_date else None,
+                    'end_date': charge.end_date.isoformat() if charge.end_date else None,
+                })
+                
+                total_amount += Decimal(str(charge.amount))
+            
+            preview = {
+                'load_id': load.id,
+                'customer_name': load.customer.name,
+                'customer_id': load.customer.id,
+                'container_number': load.container.container_number if load.container else None,
+                'charge_count': len(charges),
+                'charges_by_type': charges_by_type,
+                'total_amount': float(total_amount),
+                'auto_invoice_enabled': load.customer.auto_invoice,
+                'quickbooks_enabled': bool(load.customer.quickbooks_customer_id),
+            }
+            
+            logger.info(
+                f"Preview complete for load {load.id}: "
+                f"{len(charges)} charges, total ${total_amount:.2f}"
+            )
+            
+            return preview
+            
+        except Exception as e:
+            logger.error(f"Failed to preview charges for load {load.id}: {e}")
+            raise ChargeCalculationError(
+                f"Failed to preview charges for load {load.id}"
+            ) from e
+    
+    def get_billing_summary(self, load: Load) -> Dict[str, Any]:
+        """
+        Get a comprehensive billing summary for a load.
+        
+        Args:
+            load: Load to get summary for
+            
+        Returns:
+            Dictionary containing billing summary
+        """
+        logger.info(f"Getting billing summary for load {load.id}")
+        
+        try:
+            # Get existing charges from database
+            existing_charges = (
+                self.db.query(Charge)
+                .filter(Charge.load_id == load.id)
+                .all()
+            )
+            
+            # Get existing invoices
+            existing_invoices = (
+                self.db.query(Invoice)
+                .filter(Invoice.load_id == load.id)
+                .all()
+            )
+            
+            total_charges = sum(c.amount for c in existing_charges)
+            total_invoiced = sum(i.total_amount for i in existing_invoices)
+            
+            summary = {
+                'load_id': load.id,
+                'customer_name': load.customer.name,
+                'status': load.status.value if hasattr(load.status, 'value') else str(load.status),
+                'charges': {
+                    'count': len(existing_charges),
+                    'total': float(total_charges),
+                    'by_type': self._group_charges_by_type(existing_charges),
+                },
+                'invoices': {
+                    'count': len(existing_invoices),
+                    'total': float(total_invoiced),
+                    'details': [
+                        {
+                            'id': inv.id,
+                            'number': inv.invoice_number,
+                            'amount': float(inv.total_amount),
+                            'status': inv.status.value if hasattr(inv.status, 'value') else str(inv.status),
+                            'created_at': inv.created_at.isoformat() if inv.created_at else None,
+                        }
+                        for inv in existing_invoices
+                    ],
+                },
+                'container': {
+                    'number': load.container.container_number if load.container else None,
+                    'picked_up': load.container.picked_up.isoformat() if load.container and load.container.picked_up else None,
+                    'delivered': load.container.delivered.isoformat() if load.container and load.container.delivered else None,
+                },
+            }
+            
+            logger.info(
+                f"Billing summary for load {load.id}: "
+                f"{len(existing_charges)} charges (${total_charges:.2f}), "
+                f"{len(existing_invoices)} invoices (${total_invoiced:.2f})"
+            )
+            
+            return summary
+            
+        except Exception as e:
+            logger.error(f"Failed to get billing summary for load {load.id}: {e}")
+            raise
+    
+    def _group_charges_by_type(self, charges: list[Charge]) -> Dict[str, Dict[str, Any]]:
+        """
+        Group charges by type with totals.
+        
+        Args:
+            charges: List of charges to group
+            
+        Returns:
+            Dictionary of charge types to summary data
+        """
+        grouped = {}
+        
+        for charge in charges:
+            charge_type = charge.charge_type.value if hasattr(charge.charge_type, 'value') else str(charge.charge_type)
+            
+            if charge_type not in grouped:
+                grouped[charge_type] = {
+                    'count': 0,
+                    'total': 0.0,
+                }
+            
+            grouped[charge_type]['count'] += 1
+            grouped[charge_type]['total'] += float(charge.amount)
+        
+        return grouped
 
