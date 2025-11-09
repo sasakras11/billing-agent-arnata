@@ -1,3 +1,20 @@
+"""
+Billing Agent Module
+
+This module provides the core BillingAgent class responsible for processing
+load billing, charge calculations, invoice generation, and QuickBooks synchronization.
+
+The BillingAgent orchestrates the billing workflow by:
+- Calculating charges using configurable rate tables
+- Generating invoices based on customer preferences
+- Syncing billing data to QuickBooks when enabled
+- Providing preview and summary capabilities
+
+Example:
+    agent = BillingAgent(db_session)
+    invoice = agent.process_load_billing(load, auto_send=True)
+"""
+
 import logging
 import time
 from typing import Optional, Dict, Any
