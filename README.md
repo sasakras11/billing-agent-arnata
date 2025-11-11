@@ -28,47 +28,8 @@ McLeod LoadMaster API ←→ AI Agent ←→ Terminal49 API
 - Redis 7+
 - Docker & Docker Compose (optional)
 
-### Installation
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd billing-agent
-```
 
-2. Create virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-4. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your API credentials
-```
-
-5. Initialize database:
-```bash
-alembic upgrade head
-```
-
-6. Run the application:
-```bash
-# Start Redis
-redis-server
-
-# Start Celery worker
-celery -A tasks.celery_app worker --loglevel=info
-
-# Start API server
-uvicorn api.main:app --reload
-```
 
 ### Docker Deployment
 
