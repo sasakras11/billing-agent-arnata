@@ -127,15 +127,6 @@ customer = Customer(
 )
 ```
 
-### Alert Thresholds
-
-Customize alert timing in `config.py`:
-
-```python
-alert_hours_before_charge = 24  # Alert 24h before per diem starts
-urgent_alert_hours = 6           # Urgent alert if 6h remaining
-```
-
 ## Monitoring
 
 - **Health Check**: `GET /health`
