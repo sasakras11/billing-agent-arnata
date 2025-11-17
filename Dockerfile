@@ -12,5 +12,3 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements
 COPY requirements.txt .
-
-# Install Python dependencies
