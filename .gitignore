@@ -21,22 +21,6 @@ logs/
 *.sqlite
 *.sqlite3
 
-# Tests
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Alembic
-alembic/versions/*.pyc
-
-# Celery
-celerybeat-schedule
-celerybeat.pid
 
 # Temporary
 *.tmp
