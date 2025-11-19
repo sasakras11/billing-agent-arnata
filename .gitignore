@@ -8,22 +8,3 @@ env/
 venv/
 ENV/
 
-wheels/
-
-*~
-
-# Logs
-logs/
-*.log
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-
-# Temporary
-*.tmp
-*.bak
-main.py.save
-
