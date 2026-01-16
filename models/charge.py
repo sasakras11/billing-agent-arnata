@@ -11,15 +11,7 @@ class ChargeType(str, Enum):
     """Types of charges that can be billed."""
     BASE_FREIGHT = "base_freight"
     PER_DIEM = "per_diem"
-    DEMURRAGE = "demurrage"
-    DETENTION = "detention"
-    CHASSIS_SPLIT = "chassis_split"
-    PRE_PULL = "pre_pull"
-    FUEL_SURCHARGE = "fuel_surcharge"
-    SCALE_TICKET = "scale_ticket"
-    OVERWEIGHT = "overweight"
-    HAZMAT = "hazmat"
-    OTHER = "other"
+
 
 
 class Charge(Base):
