@@ -14,9 +14,7 @@ settings = get_settings()
 
 class McLeodLoad(BaseModel):
     """McLeod load data model."""
-    order_id: str
-    load_number: str
-    customer_id: str
+
     customer_name: str
     container_number: Optional[str] = None
     booking_number: Optional[str] = None
