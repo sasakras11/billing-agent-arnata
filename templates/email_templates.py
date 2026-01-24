@@ -12,25 +12,6 @@ class EmailTemplate:
             HTML body
         """
         raise NotImplementedError
-
-
-class InvoiceEmailTemplate(EmailTemplate):
-    """Email template for sending invoices."""
-    
-    def render_subject(self) -> str:
-        """Render invoice email subject."""
-        invoice_number = self.data.get("invoice_number", "Unknown")
-        customer_name = self.data.get("customer_name", "")
-        
-        return f"Invoice #{invoice_number} - {customer_name}"
-    
-    def render_body_text(self) -> str:
-        """Render invoice email plain text body."""
-        customer_name = self.data.get("customer_name", "Valued Customer")
-        invoice_number = self.data.get("invoice_number", "")
-        invoice_date = self.data.get("invoice_date", "")
-        due_date = self.data.get("due_date", "")
-        total_amount = self.data.get("total_amount", 0.0)
         line_items = self.data.get("line_items", [])
         
         text = f"""Dear {customer_name},
