@@ -7,30 +7,7 @@ from constants import (
 
 class EmailTemplate:
     """Base class for email templates."""
-    
-    def __init__(self, data: Dict[str, Any]):
-        """
-        Initialize template with data.
-        
-        Args:
-            data: Template data dictionary
-        """
-        self.data = data
-    
-    def render_subject(self) -> str:
-        """
-        Render email subject line.
-        Render plain text email body.
-        
-        Returns:
-            Plain text body
-        """
-        raise NotImplementedError
-    
-    def render_body_html(self) -> str:
-        """
-        Render HTML email body.
-        
+
         Returns:
             HTML body
         """
