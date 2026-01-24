@@ -3,10 +3,6 @@ from datetime import date, datetime
 from typing import Dict, Any, Optional
 
 from constants import (
-    EMAIL_INVOICE_SUBJECT,
-    EMAIL_ALERT_SUBJECT,
-    EMAIL_DISPUTE_SUBJECT,
-)
 
 
 class EmailTemplate:
