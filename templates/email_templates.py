@@ -63,44 +63,6 @@ Please find attached Invoice #{invoice_number} for the services provided.
 Invoice Details:
 -----------------
 Invoice Number: {invoice_number}
-Invoice Date: {invoice_date}
-Due Date: {due_date}
-Total Amount: ${total_amount:,.2f}
-
-"""
-        
-        if line_items:
-            text += "Line Items:\n"
-            for item in line_items:
-                description = item.get("description", "")
-                amount = item.get("amount", 0.0)
-                text += f"  • {description}: ${amount:,.2f}\n"
-            text += "\n"
-        
-        text += """Payment Instructions:
-Please remit payment by the due date to avoid late fees.
-Payment can be made via check, ACH, or credit card.
-
-If you have any questions regarding this invoice, please don't hesitate to contact us.
-
-Thank you for your business!
-
-Best regards,
-Billing Department
-"""
-        
-        return text
-    
-    def render_body_html(self) -> str:
-        """Render invoice email HTML body."""
-        customer_name = self.data.get("customer_name", "Valued Customer")
-        invoice_number = self.data.get("invoice_number", "")
-        invoice_date = self.data.get("invoice_date", "")
-        due_date = self.data.get("due_date", "")
-        total_amount = self.data.get("total_amount", 0.0)
-        line_items = self.data.get("line_items", [])
-        
-        html = f"""
 <!DOCTYPE html>
 <html>
 <head>
