@@ -20,14 +20,6 @@ class EmailTemplate:
     def render_subject(self) -> str:
         """
         Render email subject line.
-        
-        Returns:
-            Subject line string
-        """
-        raise NotImplementedError
-    
-    def render_body_text(self) -> str:
-        """
         Render plain text email body.
         
         Returns:
