@@ -1,14 +1,6 @@
 .PHONY: help install dev start stop restart logs test lint format clean docker-build docker-up docker-down
 
-help:
-	@echo "AI Billing Agent - Available Commands:"
-	@echo "  make install       - Install dependencies"
-	@echo "  make dev          - Run in development mode"
-	@echo "  make start        - Start all services"
-	@echo "  make stop         - Stop all services"
-	@echo "  make restart      - Restart all services"
-	@echo "  make logs         - View logs"
-	@echo "  make test         - Run tests"
+
 	@echo "  make lint         - Run linters"
 	@echo "  make format       - Format code"
 	@echo "  make clean        - Clean temporary files"
