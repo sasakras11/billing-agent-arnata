@@ -1,29 +1,10 @@
 .PHONY: help install dev start stop restart logs test lint format clean docker-build docker-up docker-down
 
-
-	@echo "  make lint         - Run linters"
-	@echo "  make format       - Format code"
-	@echo "  make clean        - Clean temporary files"
-	@echo "  make docker-build - Build Docker images"
-	@echo "  make docker-up    - Start Docker containers"
-	@echo "  make docker-down  - Stop Docker containers"
-
 install:
 	pip install -r requirements.txt
 
 dev:
 	uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
-
-start:
-	@echo "Starting services..."
-	uvicorn api.main:app --host 0.0.0.0 --port 8000 &
-	celery -A tasks.celery_app worker --loglevel=info &
-	celery -A tasks.celery_app beat --loglevel=info &
-
-stop:
-	@echo "Stopping services..."
-	pkill -f "uvicorn api.main:app"
-	pkill -f "celery"
 
 restart: stop start
 
