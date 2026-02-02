@@ -6,39 +6,6 @@ import pytz
 from constants import DATE_FORMAT_DISPLAY, DATETIME_FORMAT_DISPLAY
 
 
-def calculate_business_days(
-    start_date: date,
-    end_date: date,
-    exclude_weekends: bool = True
-) -> int:
-    """
-    Calculate number of business days between two dates.
-    
-    Args:
-        start_date: Start date
-        end_date: End date
-        exclude_weekends: Whether to exclude weekends
-        
-    Returns:
-        Number of business days
-    """
-    if end_date < start_date:
-        return 0
-    
-    if not exclude_weekends:
-        return (end_date - start_date).days
-    
-    # Count days excluding weekends
-    days = 0
-    current = start_date
-    
-    while current <= end_date:
-        if current.weekday() < 5:  # Monday = 0, Friday = 4
-            days += 1
-        current += timedelta(days=1)
-    
-    return days
-
 
 def is_weekend(check_date: date) -> bool:
     """
@@ -51,19 +18,6 @@ def is_weekend(check_date: date) -> bool:
         True if Saturday or Sunday
     """
     return check_date.weekday() >= 5  # Saturday = 5, Sunday = 6
-
-
-def is_business_day(check_date: date) -> bool:
-    """
-    Check if date is a business day (Monday-Friday).
-    
-    Args:
-        check_date: Date to check
-        
-    Returns:
-        True if Monday through Friday
-    """
-    return not is_weekend(check_date)
 
 
 def add_business_days(start_date: date, days: int) -> date:
