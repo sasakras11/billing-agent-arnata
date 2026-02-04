@@ -219,28 +219,6 @@ This is an automated alert from the Billing Agent system.
 </html>
 """
         
-        return html
-
-
-class DisputeResponseEmailTemplate(EmailTemplate):
-    """Email template for invoice dispute responses."""
-    
-    def render_subject(self) -> str:
-        """Render dispute response email subject."""
-        invoice_number = self.data.get("invoice_number", "Unknown")
-        return f"Re: Invoice #{invoice_number} Dispute"
-    
-    def render_body_text(self) -> str:
-        """Render dispute response email plain text body."""
-        customer_name = self.data.get("customer_name", "Valued Customer")
-        invoice_number = self.data.get("invoice_number", "")
-        response_message = self.data.get("response_message", "")
-        resolution = self.data.get("resolution", "")
-        
-        text = f"""Dear {customer_name},
-
-Thank you for reaching out regarding Invoice #{invoice_number}.
-
 {response_message}
 
 Resolution:
