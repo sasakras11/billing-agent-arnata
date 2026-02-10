@@ -13,11 +13,6 @@ from pydantic import BaseModel
     bill_of_lading: Optional[str] = None
     shipper_name: Optional[str] = Non
     delivery_location: Optional[str] = None
-    pickup_date: Optional[datetime] = None
-    scheduled_delivery_date: Optional[datetime] = None
-    actual_delivery_date: Optional[datetime] = None
-    base_freight_rate: Optional[float] = None
-    equipment_type: Optional[str] = None
     cargo_weight: Optional[float] = None
     status: str = "pending"
     notes: Optional[str] = None
