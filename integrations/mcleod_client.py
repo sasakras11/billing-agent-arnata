@@ -5,14 +5,6 @@ from typing import List, Dict, Optional, Any
 
 import httpx
 from pydantic import BaseModel
-
-from config import get_settings
-
-logger = logging.getLogger(__name__)
-settings = get_settings()
-
-
-class McLeodLoad(BaseModel):
     """McLeod load data model."""
 
     customer_name: str
