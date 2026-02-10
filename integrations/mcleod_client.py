@@ -11,10 +11,7 @@ from pydantic import BaseModel
     container_number: Optional[str] = None
     booking_number: Optional[str] = None
     bill_of_lading: Optional[str] = None
-    shipper_name: Optional[str] = None
-    consignee_name: Optional[str] = None
-    pickup_location: Optional[str] = None
-    pickup_terminal: Optional[str] = None
+    shipper_name: Optional[str] = Non
     delivery_location: Optional[str] = None
     pickup_date: Optional[datetime] = None
     scheduled_delivery_date: Optional[datetime] = None
