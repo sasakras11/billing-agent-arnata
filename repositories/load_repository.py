@@ -34,7 +34,7 @@ class LoadRepository(BaseRepository[Load]):
             Load or None
         """
         return self.db.query(Load).filter(
-            Load.load_number == load_number
+            Load.mcleod_load_number == load_number
         ).first()
     
     def get_by_customer(
@@ -60,13 +60,17 @@ class LoadRepository(BaseRepository[Load]):
     
     def get_unbilled_loads(self) -> List[Load]:
         """
-        Get loads that haven't been billed yet.
-        
+        Get loads that haven't been billed yet (delivered but no invoice for their charges).
+
         Returns:
             List of unbilled loads
         """
+        from models import Charge
+        billed_load_ids = self.db.query(Charge.load_id).filter(
+            Charge.invoice_id.isnot(None)
+        ).distinct()
         return self.db.query(Load).filter(
-            Load.invoice_id.is_(None),
-            Load.delivered_date.isnot(None)
-        ).order_by(Load.delivered_date.asc()).all()
+            Load.actual_delivery_date.isnot(None),
+            ~Load.id.in_(billed_load_ids)
+        ).order_by(Load.actual_delivery_date.asc()).all()
 
