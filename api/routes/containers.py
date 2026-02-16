@@ -1,9 +1,10 @@
 """Container endpoints."""
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
 from datetime import datetime
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy.orm import Session
 
 from models import get_db, Container
 
@@ -11,14 +12,13 @@ router = APIRouter()
 
 
 class ContainerResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     container_number: str
     current_status: str | None
     location: str | None
     last_free_day: datetime | None
-    
-    class Config:
-        from_attributes = True
 
 
 @router.get("/containers", response_model=List[ContainerResponse])

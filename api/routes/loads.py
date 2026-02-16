@@ -1,8 +1,9 @@
 """Load endpoints."""
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from models import get_db, Load
 
@@ -10,13 +11,12 @@ router = APIRouter()
 
 
 class LoadResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     mcleod_order_id: str
     container_number: str | None
     status: str
-    
-    class Config:
-        from_attributes = True
 
 
 @router.get("/loads", response_model=List[LoadResponse])

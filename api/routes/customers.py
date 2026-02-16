@@ -1,8 +1,9 @@
 """Customer endpoints."""
 from typing import List
+
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from models import get_db, Customer
 
@@ -10,12 +11,11 @@ router = APIRouter()
 
 
 class CustomerResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     email: str | None
-    
-    class Config:
-        from_attributes = True
 
 
 @router.get("/customers", response_model=List[CustomerResponse])

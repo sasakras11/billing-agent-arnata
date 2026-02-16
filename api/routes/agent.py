@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from models import get_db, Container, Customer
+from models import get_db, Container, Customer, Invoice
 from agents import TrackingAgent, BillingAgent, DisputeAgent
 
 router = APIRouter()
@@ -80,8 +80,6 @@ async def draft_dispute_response(
     db: Session = Depends(get_db)
 ):
     """Draft response to invoice dispute."""
-    from models import Invoice
-    
     invoice = db.query(Invoice).filter(Invoice.id == request.invoice_id).first()
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")

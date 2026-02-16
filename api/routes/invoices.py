@@ -1,8 +1,9 @@
 """Invoice endpoints."""
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from models import get_db, Invoice
 
@@ -10,13 +11,12 @@ router = APIRouter()
 
 
 class InvoiceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     invoice_number: str
     total_amount: float
     status: str
-    
-    class Config:
-        from_attributes = True
 
 
 @router.get("/invoices", response_model=List[InvoiceResponse])
