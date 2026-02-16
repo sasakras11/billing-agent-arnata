@@ -1,15 +1,13 @@
-"""Application-wide constants."""
+"""Application-wide constants.
+
+Default billing rates (per diem, demurrage, detention, free days) are configured
+in config.Settings; use get_settings().get_rate_config() or customer-specific rates.
+"""
 
 # Alert timing (in hours)
 ALERT_HOURS_BEFORE_CHARGE = 24
 URGENT_ALERT_HOURS = 6
 CRITICAL_ALERT_HOURS = 2
-
-# Charge rates (defaults, overridden by customer contracts)
-DEFAULT_PER_DIEM_RATE = 100.0
-DEFAULT_DEMURRAGE_RATE = 150.0
-DEFAULT_DETENTION_RATE = 125.0
-DEFAULT_FREE_DAYS = 3
 
 # Sync intervals (in minutes)
 MCLEOD_SYNC_INTERVAL = 15
