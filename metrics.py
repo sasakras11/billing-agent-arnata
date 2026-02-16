@@ -125,7 +125,11 @@ class MetricsCollector:
         
         outstanding_invoices = sum(
             1 for inv in invoices
-            if inv.status in [InvoiceStatus.SENT, InvoiceStatus.PENDING, InvoiceStatus.OVERDUE]
+            if inv.status in [
+                InvoiceStatus.SENT,
+                InvoiceStatus.PENDING_APPROVAL,
+                InvoiceStatus.OVERDUE,
+            ]
         )
         
         disputed_invoices = sum(
@@ -423,11 +427,11 @@ class MetricsCollector:
         
         # Count active entities
         total_customers = self.db.query(Customer).filter(
-            Customer.is_active == True
+            Customer.active == True
         ).count()
         
         active_loads = self.db.query(Load).filter(
-            Load.delivered_date.is_(None)
+            Load.actual_delivery_date.is_(None)
         ).count()
         
         active_containers = self.db.query(Container).filter(
@@ -436,9 +440,9 @@ class MetricsCollector:
         
         pending_invoices = self.db.query(Invoice).filter(
             Invoice.status.in_([
-                InvoiceStatus.PENDING,
+                InvoiceStatus.PENDING_APPROVAL,
                 InvoiceStatus.SENT,
-                InvoiceStatus.OVERDUE
+                InvoiceStatus.OVERDUE,
             ])
         ).count()
         

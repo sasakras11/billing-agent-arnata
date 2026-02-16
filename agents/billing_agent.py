@@ -307,10 +307,12 @@ class BillingAgent:
                 .all()
             )
             
-            # Get existing invoices
+            # Get existing invoices (via charges linked to this load)
             existing_invoices = (
                 self.db.query(Invoice)
-                .filter(Invoice.load_id == load.id)
+                .join(Charge, Charge.invoice_id == Invoice.id)
+                .filter(Charge.load_id == load.id)
+                .distinct()
                 .all()
             )
             
