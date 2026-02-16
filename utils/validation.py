@@ -1,5 +1,6 @@
 """Validation utilities for data integrity."""
 import re
+from datetime import date
 from typing import Optional
 
 from exceptions import ValidationError
@@ -282,30 +283,28 @@ def validate_date_range(
 ) -> tuple[date, date]:
     """
     Validate that start date is before or equal to end date.
-    
+
     Args:
         start_date: Start date
         end_date: End date
         field_prefix: Prefix for error messages
-        
+
     Returns:
         Tuple of (start_date, end_date)
-        
+
     Raises:
         ValidationError: If dates are invalid
     """
-    from datetime import date as date_type
-    
     if start_date is None:
         raise ValidationError(f"{field_prefix} start date is required")
-    
+
     if end_date is None:
         raise ValidationError(f"{field_prefix} end date is required")
-    
-    if not isinstance(start_date, date_type):
+
+    if not isinstance(start_date, date):
         raise ValidationError(f"{field_prefix} start must be a date")
-    
-    if not isinstance(end_date, date_type):
+
+    if not isinstance(end_date, date):
         raise ValidationError(f"{field_prefix} end must be a date")
     
     if start_date > end_date:

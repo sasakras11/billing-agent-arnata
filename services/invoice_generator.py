@@ -290,7 +290,7 @@ class InvoiceGenerator:
             try:
                 last_seq = int(last_invoice.invoice_number.split("-")[-1])
                 seq = last_seq + 1
-            except:
+            except (ValueError, IndexError):
                 seq = 1
         else:
             seq = 1
@@ -311,7 +311,7 @@ class InvoiceGenerator:
             # Extract number of days
             days = int(payment_terms.split()[-1])
             return invoice_date + timedelta(days=days)
-        except:
+        except (ValueError, IndexError):
             # Default to 30 days
             return invoice_date + timedelta(days=30)
     
