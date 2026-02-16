@@ -1,5 +1,4 @@
 """FastAPI main application."""
-import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -9,16 +8,13 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from config import get_settings
+from logging_config import setup_logging, get_logger
 from models import get_db, init_db
 from api.routes import loads, containers, invoices, customers, agent, health
 from api.webhooks import terminal49, quickbooks
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+setup_logging()
+logger = get_logger(__name__)
 
 settings = get_settings()
 
