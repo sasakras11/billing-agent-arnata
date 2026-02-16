@@ -10,17 +10,6 @@ from services.charge_calculator import ChargeCalculator
 
 
 @pytest.fixture
-def db_session():
-    """Create test database session."""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
-    yield session
-    session.close()
-
-
-@pytest.fixture
 def sample_customer(db_session):
     """Create sample customer."""
     customer = Customer(
