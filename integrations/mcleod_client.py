@@ -1,18 +1,39 @@
 """McLeod LoadMaster API client."""
+
 import logging
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Any
+from typing import Any, Dict, List, Optional
 
 import httpx
 from pydantic import BaseModel
+
+from config import get_settings
+
+
+logger = logging.getLogger(__name__)
+settings = get_settings()
+
+
+class McLeodLoad(BaseModel):
     """McLeod load data model."""
 
+    order_id: str
+    load_number: str
+    customer_id: str
     customer_name: str
     container_number: Optional[str] = None
     booking_number: Optional[str] = None
     bill_of_lading: Optional[str] = None
-    shipper_name: Optional[str] = Non
+    shipper_name: Optional[str] = None
+    consignee_name: Optional[str] = None
+    pickup_location: Optional[str] = None
+    pickup_terminal: Optional[str] = None
     delivery_location: Optional[str] = None
+    pickup_date: Optional[datetime] = None
+    scheduled_delivery_date: Optional[datetime] = None
+    actual_delivery_date: Optional[datetime] = None
+    base_freight_rate: Optional[float] = None
+    equipment_type: Optional[str] = None
     cargo_weight: Optional[float] = None
     status: str = "pending"
     notes: Optional[str] = None
