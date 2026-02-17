@@ -1,26 +1,92 @@
 """Email template generation for various notifications."""
-from datetime import date, datetime
-from typing import Dict, Any, Optional
 
-from constants import (
+from typing import Any, Dict
 
 
 class EmailTemplate:
     """Base class for email templates."""
 
-        Returns:
-            HTML body
-        """
+    def __init__(self, data: Dict[str, Any]):
+        self.data = data
+
+    def render_subject(self) -> str:
+        """Render email subject."""
         raise NotImplementedError
+
+    def render_body_text(self) -> str:
+        """Render plain text email body."""
+        raise NotImplementedError
+
+    def render_body_html(self) -> str:
+        """Render HTML email body."""
+        raise NotImplementedError
+
+
+class InvoiceEmailTemplate(EmailTemplate):
+    """Email template for invoices."""
+
+    def render_subject(self) -> str:
+        invoice_number = self.data.get("invoice_number", "")
+        return f"Invoice #{invoice_number}" if invoice_number else "Invoice"
+
+    def render_body_text(self) -> str:
+        customer_name = self.data.get("customer_name", "Valued Customer")
+        invoice_number = self.data.get("invoice_number", "")
+        invoice_date = self.data.get("invoice_date", "")
+        due_date = self.data.get("due_date", "")
+        total_amount = self.data.get("total_amount", 0.0)
         line_items = self.data.get("line_items", [])
-        
-        text = f"""Dear {customer_name},
 
-Please find attached Invoice #{invoice_number} for the services provided.
+        lines = [
+            f"Dear {customer_name},",
+            "",
+            (
+                f"Please find Invoice #{invoice_number} for the services provided."
+                if invoice_number
+                else "Please find your invoice for the services provided."
+            ),
+            "",
+            "Invoice Details:",
+            "-----------------",
+            f"Invoice Number: {invoice_number}" if invoice_number else "",
+            f"Invoice Date: {invoice_date}" if invoice_date else "",
+            f"Due Date: {due_date}" if due_date else "",
+            f"Total Amount: ${total_amount:,.2f}",
+        ]
 
-Invoice Details:
------------------
-Invoice Number: {invoice_number}
+        if line_items:
+            lines.append("")
+            lines.append("Line Items:")
+            for item in line_items:
+                description = item.get("description", "")
+                amount = item.get("amount", 0.0)
+                lines.append(f"- {description}: ${amount:,.2f}")
+
+        lines.extend(
+            [
+                "",
+                "Please remit payment by the due date to avoid late fees.",
+                "If you have any questions regarding this invoice, please don't hesitate to contact us.",
+                "",
+                "Thank you for your business!",
+                "",
+                "Best regards,",
+                "Billing Department",
+            ]
+        )
+
+        # Filter out any empty lines created by missing optional fields
+        return "\n".join(line for line in lines if line != "")
+
+    def render_body_html(self) -> str:
+        customer_name = self.data.get("customer_name", "Valued Customer")
+        invoice_number = self.data.get("invoice_number", "")
+        invoice_date = self.data.get("invoice_date", "")
+        due_date = self.data.get("due_date", "")
+        total_amount = self.data.get("total_amount", 0.0)
+        line_items = self.data.get("line_items", [])
+
+        html = f"""
 <!DOCTYPE html>
 <html>
 <head>
@@ -55,7 +121,7 @@ Invoice Number: {invoice_number}
                 <p class="total"><strong>Total Amount:</strong> ${total_amount:,.2f}</p>
             </div>
 """
-        
+
         if line_items:
             html += """
             <div class="line-items">
@@ -73,7 +139,7 @@ Invoice Number: {invoice_number}
             html += """
             </div>
 """
-        
+
         html += """
             <div class="invoice-details">
                 <h3>Payment Instructions</h3>
@@ -93,22 +159,19 @@ Invoice Number: {invoice_number}
 </body>
 </html>
 """
-        
+
         return html
 
 
 class ContainerAlertEmailTemplate(EmailTemplate):
     """Email template for container alerts."""
-    
+
     def render_subject(self) -> str:
-        """Render alert email subject."""
         container_number = self.data.get("container_number", "Unknown")
         alert_type = self.data.get("alert_type", "Alert")
-        
         return f"Container Alert: {container_number} - {alert_type}"
-    
+
     def render_body_text(self) -> str:
-        """Render alert email plain text body."""
         container_number = self.data.get("container_number", "")
         alert_type = self.data.get("alert_type", "")
         message = self.data.get("message", "")
@@ -116,37 +179,40 @@ class ContainerAlertEmailTemplate(EmailTemplate):
         customer_name = self.data.get("customer_name", "")
         last_free_day = self.data.get("last_free_day", "")
         estimated_charges = self.data.get("estimated_charges", 0.0)
-        
-        text = f"""CONTAINER ALERT
 
-Alert Type: {alert_type}
-Container: {container_number}
-Load: {load_number}
-Customer: {customer_name}
+        lines = [
+            "CONTAINER ALERT",
+            "",
+            f"Alert Type: {alert_type}",
+            f"Container: {container_number}",
+            f"Load: {load_number}",
+            f"Customer: {customer_name}",
+            "",
+            message,
+            "",
+        ]
 
-{message}
-
-"""
-        
         if last_free_day:
-            text += f"Last Free Day: {last_free_day}\n"
-        
+            lines.append(f"Last Free Day: {last_free_day}")
+
         if estimated_charges > 0:
-            text += f"Estimated Daily Charges: ${estimated_charges:,.2f}\n"
-        
-        text += """
-ACTION REQUIRED:
-Please ensure the container is returned by the last free day to avoid additional charges.
+            lines.append(f"Estimated Daily Charges: ${estimated_charges:,.2f}")
 
-For questions or concerns, please contact dispatch immediately.
+        lines.extend(
+            [
+                "",
+                "ACTION REQUIRED:",
+                "Please ensure the container is returned by the last free day to avoid additional charges.",
+                "",
+                "For questions or concerns, please contact dispatch immediately.",
+                "",
+                "This is an automated alert from the Billing Agent system.",
+            ]
+        )
 
-This is an automated alert from the Billing Agent system.
-"""
-        
-        return text
-    
+        return "\n".join(lines)
+
     def render_body_html(self) -> str:
-        """Render alert email HTML body."""
         container_number = self.data.get("container_number", "")
         alert_type = self.data.get("alert_type", "")
         message = self.data.get("message", "")
@@ -155,15 +221,14 @@ This is an automated alert from the Billing Agent system.
         last_free_day = self.data.get("last_free_day", "")
         estimated_charges = self.data.get("estimated_charges", 0.0)
         urgency = self.data.get("urgency", "normal")
-        
-        # Color based on urgency
+
         alert_color = {
             "low": "#28a745",
             "normal": "#ffc107",
             "high": "#fd7e14",
-            "critical": "#dc3545"
+            "critical": "#dc3545",
         }.get(urgency, "#ffc107")
-        
+
         html = f"""
 <!DOCTYPE html>
 <html>
@@ -182,7 +247,7 @@ This is an automated alert from the Billing Agent system.
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚨 CONTAINER ALERT</h1>
+            <h1>CONTAINER ALERT</h1>
             <h2>{alert_type}</h2>
         </div>
         
@@ -193,19 +258,19 @@ This is an automated alert from the Billing Agent system.
                 <div class="detail"><strong>Load:</strong> {load_number}</div>
                 <div class="detail"><strong>Customer:</strong> {customer_name}</div>
 """
-        
+
         if last_free_day:
             html += f'                <div class="detail"><strong>Last Free Day:</strong> {last_free_day}</div>\n'
-        
+
         if estimated_charges > 0:
             html += f'                <div class="detail"><strong>Estimated Daily Charges:</strong> ${estimated_charges:,.2f}</div>\n'
-        
+
         html += f"""
                 <p style="margin-top: 15px; font-size: 1.1em;">{message}</p>
             </div>
             
             <div class="action-box">
-                <h3>⚠️ ACTION REQUIRED</h3>
+                <h3>ACTION REQUIRED</h3>
                 <p>Please ensure the container is returned by the last free day to avoid additional charges.</p>
                 <p>For questions or concerns, please contact dispatch immediately.</p>
             </div>
@@ -218,30 +283,56 @@ This is an automated alert from the Billing Agent system.
 </body>
 </html>
 """
-        
-{response_message}
 
-Resolution:
------------
-{resolution}
+        return html
 
-If you need any additional information or documentation, please let us know and we'll be happy to provide it.
 
-We appreciate your business and look forward to resolving this matter promptly.
+class DisputeResponseEmailTemplate(EmailTemplate):
+    """Email template for dispute responses."""
 
-Best regards,
-Billing Department
-"""
-        
-        return text
-    
-    def render_body_html(self) -> str:
-        """Render dispute response email HTML body."""
+    def render_subject(self) -> str:
+        invoice_number = self.data.get("invoice_number", "")
+        return (
+            f"Invoice Dispute Response - Invoice #{invoice_number}"
+            if invoice_number
+            else "Invoice Dispute Response"
+        )
+
+    def render_body_text(self) -> str:
         customer_name = self.data.get("customer_name", "Valued Customer")
         invoice_number = self.data.get("invoice_number", "")
         response_message = self.data.get("response_message", "")
         resolution = self.data.get("resolution", "")
-        
+
+        lines = [
+            f"Dear {customer_name},",
+            "",
+            f"Thank you for reaching out regarding Invoice #{invoice_number}."
+            if invoice_number
+            else "Thank you for reaching out regarding your invoice.",
+            "",
+            response_message,
+            "",
+            "Resolution:",
+            "-----------",
+            resolution,
+            "",
+            "If you need any additional information or documentation, please let us know and we'll be happy to provide it.",
+            "",
+            "We appreciate your business and look forward to resolving this matter promptly.",
+            "",
+            "Best regards,",
+            "Billing Department",
+        ]
+
+        return "\n".join(lines)
+
+    def render_body_html(self) -> str:
+        customer_name = self.data.get("customer_name", "Valued Customer")
+        invoice_number = self.data.get("invoice_number", "")
+        response_message = self.data.get("response_message", "")
+        resolution = self.data.get("resolution", "")
+
         html = f"""
 <!DOCTYPE html>
 <html>
@@ -289,34 +380,35 @@ Billing Department
 </body>
 </html>
 """
-        
+
         return html
 
 
 def get_email_template(template_type: str, data: Dict[str, Any]) -> EmailTemplate:
     """
     Get email template by type.
-    
+
     Args:
         template_type: Type of template (invoice, alert, dispute)
         data: Template data dictionary
-        
+
     Returns:
         EmailTemplate instance
-        
+
     Raises:
         ValueError: If template type is unknown
     """
+
     templates = {
         "invoice": InvoiceEmailTemplate,
         "alert": ContainerAlertEmailTemplate,
         "dispute": DisputeResponseEmailTemplate,
     }
-    
+
     template_class = templates.get(template_type.lower())
-    
+
     if not template_class:
         raise ValueError(f"Unknown template type: {template_type}")
-    
+
     return template_class(data)
 
