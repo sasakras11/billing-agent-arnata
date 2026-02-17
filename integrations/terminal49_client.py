@@ -1,14 +1,19 @@
 """Terminal49 Container Tracking API client."""
+
 import hashlib
 import hmac
 import logging
 from datetime import datetime
-from typing import List, Dict, Optional, Any
+from typing import Any, Dict, List, Optional
 
 import httpx
 from pydantic import BaseModel
 
 from config import get_settings
+
+
+logger = logging.getLogger(__name__)
+settings = get_settings()
 
 
 class ContainerMilestone(BaseModel):
