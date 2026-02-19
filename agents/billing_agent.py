@@ -129,37 +129,15 @@ class BillingAgent:
             raise
     
     def _calculate_charges(self, load: Load) -> list[Charge]:
-        """
-        Calculate all charges for a load.
-        
-        Args:
-            load: Load to calculate charges for
-            
-        Returns:
-            List of calculated charges
-            
-        Raises:
-            ChargeCalculationError: If calculation fails
-        """
+        """Calculate all charges for a load."""
         try:
-            charges = self.charge_calculator.calculate_all_charges(load)
-            return charges
+            return self.charge_calculator.calculate_all_charges(load)
         except Exception as e:
             logger.error(f"Failed to calculate charges for load {load.id}: {e}")
-            raise ChargeCalculationError(
-                f"Failed to calculate charges for load {load.id}"
-            ) from e
+            raise ChargeCalculationError(f"Failed to calculate charges for load {load.id}") from e
     
     def _save_charges(self, charges: list[Charge]) -> None:
-        """
-        Save charges to database.
-        
-        Args:
-            charges: List of charges to save
-            
-        Raises:
-            DatabaseError: If save fails
-        """
+        """Save charges to database."""
         try:
             self.db.add_all(charges)
             self.db.commit()
@@ -168,60 +146,22 @@ class BillingAgent:
             logger.error(f"Failed to save charges: {e}")
             raise DatabaseError("Failed to save charges") from e
     
-    def _generate_invoice(
-        self,
-        load: Load,
-        charges: list[Charge],
-        auto_send: bool
-    ) -> Optional[Invoice]:
-        """
-        Generate invoice for load and charges.
-        
-        Args:
-            load: Load to invoice
-            charges: List of charges to include
-            auto_send: Whether to automatically send invoice
-            
-        Returns:
-            Generated invoice
-            
-        Raises:
-            InvoiceGenerationError: If generation fails
-        """
+    def _generate_invoice(self, load: Load, charges: list[Charge], auto_send: bool) -> Optional[Invoice]:
+        """Generate invoice for load and charges."""
         try:
-            invoice = self.invoice_generator.create_invoice_from_load(
-                load, charges, auto_send=auto_send
-            )
-            return invoice
+            return self.invoice_generator.create_invoice_from_load(load, charges, auto_send=auto_send)
         except Exception as e:
             logger.error(f"Failed to generate invoice for load {load.id}: {e}")
-            raise InvoiceGenerationError(
-                f"Failed to generate invoice for load {load.id}"
-            ) from e
+            raise InvoiceGenerationError(f"Failed to generate invoice for load {load.id}") from e
     
     def _sync_to_quickbooks(self, invoice: Invoice) -> None:
-        """
-        Sync invoice to QuickBooks.
-        
-        Args:
-            invoice: Invoice to sync
-            
-        Raises:
-            QuickBooksAPIError: If sync fails
-        """
+        """Sync invoice to QuickBooks."""
         try:
             self.invoice_generator.sync_to_quickbooks(invoice)
             logger.info(f"Synced invoice {invoice.id} to QuickBooks")
         except Exception as e:
-            # Log error but don't fail the whole operation
-            logger.error(
-                f"Failed to sync invoice {invoice.id} to QuickBooks: {e}",
-                exc_info=True
-            )
-            # Still raise so caller knows sync failed
-            raise QuickBooksAPIError(
-                f"Failed to sync invoice {invoice.id} to QuickBooks"
-            ) from e
+            logger.error(f"Failed to sync invoice {invoice.id} to QuickBooks: {e}", exc_info=True)
+            raise QuickBooksAPIError(f"Failed to sync invoice {invoice.id} to QuickBooks") from e
     
     def preview_charges(self, load: Load) -> Dict[str, Any]:
         """
@@ -359,15 +299,7 @@ class BillingAgent:
             raise
     
     def _group_charges_by_type(self, charges: list[Charge]) -> Dict[str, Dict[str, Any]]:
-        """
-        Group charges by type with totals.
-        
-        Args:
-            charges: List of charges to group
-            
-        Returns:
-            Dictionary of charge types to summary data
-        """
+        """Group charges by type with totals."""
         grouped = {}
         
         for charge in charges:
