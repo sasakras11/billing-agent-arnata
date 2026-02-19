@@ -246,11 +246,9 @@ class BillingAgent:
             total_amount = Decimal('0.00')
             
             for charge in charges:
-                charge_type = charge.charge_type.value if hasattr(charge.charge_type, 'value') else str(charge.charge_type)
-                
+                charge_type = getattr(charge.charge_type, 'value', str(charge.charge_type))
                 if charge_type not in charges_by_type:
                     charges_by_type[charge_type] = []
-                
                 charges_by_type[charge_type].append({
                     'description': charge.description,
                     'rate': float(charge.rate),
@@ -259,7 +257,6 @@ class BillingAgent:
                     'start_date': charge.start_date.isoformat() if charge.start_date else None,
                     'end_date': charge.end_date.isoformat() if charge.end_date else None,
                 })
-                
                 total_amount += Decimal(str(charge.amount))
             
             preview = {
@@ -322,7 +319,7 @@ class BillingAgent:
             summary = {
                 'load_id': load.id,
                 'customer_name': load.customer.name,
-                'status': load.status.value if hasattr(load.status, 'value') else str(load.status),
+                'status': getattr(load.status, 'value', str(load.status)),
                 'charges': {
                     'count': len(existing_charges),
                     'total': float(total_charges),
@@ -336,7 +333,7 @@ class BillingAgent:
                             'id': inv.id,
                             'number': inv.invoice_number,
                             'amount': float(inv.total_amount),
-                            'status': inv.status.value if hasattr(inv.status, 'value') else str(inv.status),
+                            'status': getattr(inv.status, 'value', str(inv.status)),
                             'created_at': inv.created_at.isoformat() if inv.created_at else None,
                         }
                         for inv in existing_invoices
@@ -374,14 +371,9 @@ class BillingAgent:
         grouped = {}
         
         for charge in charges:
-            charge_type = charge.charge_type.value if hasattr(charge.charge_type, 'value') else str(charge.charge_type)
-            
+            charge_type = getattr(charge.charge_type, 'value', str(charge.charge_type))
             if charge_type not in grouped:
-                grouped[charge_type] = {
-                    'count': 0,
-                    'total': 0.0,
-                }
-            
+                grouped[charge_type] = {'count': 0, 'total': 0.0}
             grouped[charge_type]['count'] += 1
             grouped[charge_type]['total'] += float(charge.amount)
         
