@@ -38,34 +38,16 @@ class ChargeCalculator:
             logger.error(f"Error calculating last free day: {e}")
             return None
     
-    def _get_customer_rate(
-        self,
-        customer: Customer,
-        rate_type: str,
-        default_rate: float
-    ) -> float:
-        """
-        Get customer rate with caching and validation.
-        
-        Args:
-            customer: Customer object
-            rate_type: Type of rate (per_diem_rate, demurrage_rate, etc.)
-            default_rate: Default rate if customer rate not set
-            
-        Returns:
-            Validated rate
-        """
+    def _get_customer_rate(self, customer: Customer, rate_type: str, default_rate: float) -> float:
+        """Get customer rate with caching and validation."""
         cache_key = f"{customer.id}_{rate_type}"
-        
         if cache_key not in self._rate_cache:
             rate = getattr(customer, rate_type, None) or default_rate
             try:
-                validated_rate = validate_positive_amount(rate, rate_type, allow_zero=False)
-                self._rate_cache[cache_key] = validated_rate
+                self._rate_cache[cache_key] = validate_positive_amount(rate, rate_type, allow_zero=False)
             except Exception as e:
                 logger.warning(f"Invalid rate for {rate_type}, using default: {e}")
                 self._rate_cache[cache_key] = default_rate
-        
         return self._rate_cache[cache_key]
     
     def _calculate_charge_days(
@@ -273,39 +255,15 @@ class ChargeCalculator:
             logger.error(f"Error calculating all charges for load {load.id}: {e}")
             return []
     
-    def should_alert_per_diem(
-        self,
-        container: Container,
-        customer: Customer,
-        hours_threshold: int = 24
-    ) -> bool:
-        """
-        Check if we should send per diem alert.
-        
-        Args:
-            container: Container object
-            customer: Customer object
-            hours_threshold: Alert this many hours before charge starts
-            
-        Returns:
-            True if alert should be sent
-        """
+    def should_alert_per_diem(self, container: Container, customer: Customer, hours_threshold: int = 24) -> bool:
+        """Check if we should send per diem alert."""
         try:
             if not container.per_diem_starts:
                 return False
-            
-            # Calculate hours until per diem starts
             now = datetime.utcnow()
-            per_diem_datetime = datetime.combine(
-                container.per_diem_starts,
-                datetime.min.time()
-            )
-            
+            per_diem_datetime = datetime.combine(container.per_diem_starts, datetime.min.time())
             hours_until = (per_diem_datetime - now).total_seconds() / 3600
-            
-            # Alert if within threshold and not yet started
             return 0 < hours_until <= hours_threshold
-            
         except Exception as e:
             logger.error(f"Error checking per diem alert: {e}")
             return False
