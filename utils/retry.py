@@ -78,40 +78,18 @@ def retry_with_backoff(
                     last_exception = e
                     
                     if attempt == max_attempts - 1:
-                        # Last attempt failed, raise the exception
-                        logger.error(
-                            f"Function {func.__name__} failed after {max_attempts} attempts",
-                            error=str(e),
-                            exc_info=True
-                        )
+                        logger.error(f"Function {func.__name__} failed after {max_attempts} attempts", error=str(e), exc_info=True)
                         raise
                     
-                    # Calculate delay for next retry
-                    delay = exponential_backoff(
-                        attempt,
-                        base_delay=base_delay,
-                        backoff_factor=backoff_factor
-                    )
+                    delay = exponential_backoff(attempt, base_delay=base_delay, backoff_factor=backoff_factor)
+                    logger.warning(f"Function {func.__name__} failed, retrying", attempt=attempt + 1, max_attempts=max_attempts, delay_seconds=round(delay, 2), error=str(e))
                     
-                    logger.warning(
-                        f"Function {func.__name__} failed, retrying",
-                        attempt=attempt + 1,
-                        max_attempts=max_attempts,
-                        delay_seconds=round(delay, 2),
-                        error=str(e)
-                    )
-                    
-                    # Call retry callback if provided
                     if on_retry:
                         try:
                             on_retry(e, attempt)
                         except Exception as callback_error:
-                            logger.error(
-                                "Retry callback failed",
-                                error=str(callback_error)
-                            )
+                            logger.error("Retry callback failed", error=str(callback_error))
                     
-                    # Wait before retrying
                     time.sleep(delay)
             
             # Should never reach here, but just in case
@@ -162,40 +140,18 @@ def retry_async_with_backoff(
                     last_exception = e
                     
                     if attempt == max_attempts - 1:
-                        # Last attempt failed, raise the exception
-                        logger.error(
-                            f"Async function {func.__name__} failed after {max_attempts} attempts",
-                            error=str(e),
-                            exc_info=True
-                        )
+                        logger.error(f"Async function {func.__name__} failed after {max_attempts} attempts", error=str(e), exc_info=True)
                         raise
                     
-                    # Calculate delay for next retry
-                    delay = exponential_backoff(
-                        attempt,
-                        base_delay=base_delay,
-                        backoff_factor=backoff_factor
-                    )
+                    delay = exponential_backoff(attempt, base_delay=base_delay, backoff_factor=backoff_factor)
+                    logger.warning(f"Async function {func.__name__} failed, retrying", attempt=attempt + 1, max_attempts=max_attempts, delay_seconds=round(delay, 2), error=str(e))
                     
-                    logger.warning(
-                        f"Async function {func.__name__} failed, retrying",
-                        attempt=attempt + 1,
-                        max_attempts=max_attempts,
-                        delay_seconds=round(delay, 2),
-                        error=str(e)
-                    )
-                    
-                    # Call retry callback if provided
                     if on_retry:
                         try:
                             on_retry(e, attempt)
                         except Exception as callback_error:
-                            logger.error(
-                                "Retry callback failed",
-                                error=str(callback_error)
-                            )
+                            logger.error("Retry callback failed", error=str(callback_error))
                     
-                    # Wait before retrying (async)
                     await asyncio.sleep(delay)
             
             # Should never reach here, but just in case
