@@ -268,71 +268,38 @@ class InvoiceGenerator:
             logger.error(f"Error checking payment status: {e}")
             return False
     
-    def _generate_invoice_number(
-        self,
-        customer: Customer,
-        invoice_date: date
-    ) -> str:
+    def _generate_invoice_number(self, customer: Customer, invoice_date: date) -> str:
         """Generate unique invoice number."""
-        # Format: INV-YYYYMM-XXXXX
         prefix = f"INV-{invoice_date.strftime('%Y%m')}"
-        
-        # Find highest invoice number for this month
         last_invoice = (
             self.db.query(Invoice)
             .filter(Invoice.invoice_number.like(f"{prefix}-%"))
             .order_by(Invoice.invoice_number.desc())
             .first()
         )
-        
+        seq = 1
         if last_invoice:
-            # Extract sequence number
             try:
-                last_seq = int(last_invoice.invoice_number.split("-")[-1])
-                seq = last_seq + 1
+                seq = int(last_invoice.invoice_number.split("-")[-1]) + 1
             except (ValueError, IndexError):
-                seq = 1
-        else:
-            seq = 1
-        
+                pass
         return f"{prefix}-{seq:05d}"
     
-    def _calculate_due_date(
-        self,
-        payment_terms: str,
-        invoice_date: date
-    ) -> date:
+    def _calculate_due_date(self, payment_terms: str, invoice_date: date) -> date:
         """Calculate due date from payment terms."""
-        # Parse payment terms (e.g., "Net 30", "Net 15", "Due on Receipt")
         if "Due on Receipt" in payment_terms:
             return invoice_date
-        
         try:
-            # Extract number of days
-            days = int(payment_terms.split()[-1])
-            return invoice_date + timedelta(days=days)
+            return invoice_date + timedelta(days=int(payment_terms.split()[-1]))
         except (ValueError, IndexError):
-            # Default to 30 days
             return invoice_date + timedelta(days=30)
     
     def _requires_review(self, charges: List[Charge]) -> bool:
         """Check if invoice requires human review."""
-        # Review if:
-        # - Low AI confidence on any charge
-        # - Very high total amount
-        # - Disputed charges
-        
         for charge in charges:
-            if charge.ai_confidence_score and charge.ai_confidence_score < 0.80:
+            if (charge.ai_confidence_score and charge.ai_confidence_score < 0.80) or charge.is_disputed:
                 return True
-            if charge.is_disputed:
-                return True
-        
-        total = sum(c.amount for c in charges)
-        if total > 5000:  # High value threshold
-            return True
-        
-        return False
+        return sum(c.amount for c in charges) > 5000
     
     def _handle_short_payment(
         self,
