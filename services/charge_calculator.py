@@ -157,21 +157,8 @@ class ChargeCalculator:
             logger.error(f"Error calculating detention: {e}")
             return (0, 0.0)
     
-    def calculate_all_charges(
-        self,
-        load: Load,
-        as_of_date: Optional[date] = None
-    ) -> List[Charge]:
-        """
-        Calculate all charges for a load.
-        
-        Args:
-            load: Load object with container and customer
-            as_of_date: Calculate as of this date (default: today)
-            
-        Returns:
-            List of Charge objects (not yet saved to DB)
-        """
+    def calculate_all_charges(self, load: Load, as_of_date: Optional[date] = None) -> List[Charge]:
+        """Calculate all charges for a load (not saved to DB)."""
         try:
             charges = []
             
@@ -182,9 +169,8 @@ class ChargeCalculator:
             container = load.container
             customer = load.customer
             
-            # Base freight charge
             if load.base_freight_rate:
-                freight_charge = Charge(
+                charges.append(Charge(
                     load_id=load.id,
                     container_id=container.id,
                     charge_type=ChargeType.BASE_FREIGHT,
@@ -195,8 +181,7 @@ class ChargeCalculator:
                     is_billable=True,
                     billable_to_customer=True,
                     ai_confidence_score=1.0,
-                )
-                charges.append(freight_charge)
+                ))
             
             def _create_charge(charge_type, days, amount, rate, description, start_date, confidence=0.95):
                 if days > 0:
