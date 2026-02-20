@@ -80,12 +80,7 @@ class Settings(BaseSettings):
         return self.app_env == "testing"
     
     def validate_required_settings(self) -> list[str]:
-        """
-        Validate that all required settings are configured.
-        
-        Returns:
-            List of missing or invalid settings
-        """
+        """Validate that all required settings are configured. Returns list of errors."""
         errors = []
         
         # Check required API keys
@@ -125,12 +120,7 @@ class Settings(BaseSettings):
         return errors
     
     def get_rate_config(self) -> dict[str, float]:
-        """
-        Get all default rate configurations.
-        
-        Returns:
-            Dictionary of rate types to values
-        """
+        """Get all default rate configurations."""
         return {
             "per_diem": self.default_per_diem_rate,
             "demurrage": self.default_demurrage_rate,
