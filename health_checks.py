@@ -31,15 +31,7 @@ class ComponentHealth:
         details: Optional[Dict[str, Any]] = None,
         latency_ms: Optional[float] = None
     ):
-        """
-        Initialize component health.
-        
-        Args:
-            status: Health status
-            message: Optional status message
-            details: Additional details
-            latency_ms: Response latency in milliseconds
-        """
+        """Initialize component health."""
         self.status = status
         self.message = message
         self.details = details or {}
@@ -67,21 +59,11 @@ class HealthCheckService:
     """Service for checking system health."""
     
     def __init__(self, db: Optional[Session] = None):
-        """
-        Initialize health check service.
-        
-        Args:
-            db: Database session (optional)
-        """
+        """Initialize health check service."""
         self.db = db
-    
+
     def check_database(self) -> ComponentHealth:
-        """
-        Check database connectivity and health.
-        
-        Returns:
-            Database health status
-        """
+        """Check database connectivity and health."""
         if not self.db:
             return ComponentHealth(
                 status=HealthStatus.UNHEALTHY,
@@ -116,12 +98,7 @@ class HealthCheckService:
             )
     
     def check_redis(self) -> ComponentHealth:
-        """
-        Check Redis connectivity and health.
-        
-        Returns:
-            Redis health status
-        """
+        """Check Redis connectivity and health."""
         try:
             start_time = datetime.now()
             
@@ -153,12 +130,7 @@ class HealthCheckService:
             )
     
     def check_mcleod_api(self) -> ComponentHealth:
-        """
-        Check McLeod API connectivity.
-        
-        Returns:
-            McLeod API health status
-        """
+        """Check McLeod API connectivity."""
         try:
             # This is a placeholder - actual implementation would
             # make a lightweight API call to McLeod
@@ -179,12 +151,7 @@ class HealthCheckService:
             )
     
     def check_terminal49_api(self) -> ComponentHealth:
-        """
-        Check Terminal49 API connectivity.
-        
-        Returns:
-            Terminal49 API health status
-        """
+        """Check Terminal49 API connectivity."""
         try:
             # This is a placeholder - actual implementation would
             # make a lightweight API call to Terminal49
@@ -201,12 +168,7 @@ class HealthCheckService:
             )
     
     def check_quickbooks_api(self) -> ComponentHealth:
-        """
-        Check QuickBooks API connectivity.
-        
-        Returns:
-            QuickBooks API health status
-        """
+        """Check QuickBooks API connectivity."""
         try:
             # This is a placeholder - actual implementation would
             # verify QuickBooks OAuth token validity
@@ -227,12 +189,7 @@ class HealthCheckService:
             )
     
     def check_all(self) -> Dict[str, Any]:
-        """
-        Run all health checks.
-        
-        Returns:
-            Complete health status report
-        """
+        """Run all health checks."""
         logger.info("Running health checks")
         
         # Check all components
