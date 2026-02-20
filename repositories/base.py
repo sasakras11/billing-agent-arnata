@@ -13,33 +13,15 @@ ModelType = TypeVar("ModelType")
 
 
 class BaseRepository(Generic[ModelType]):
-    """
-    Base repository providing common CRUD operations.
-    
-    Generic type pattern for type-safe repository operations.
-    """
-    
+    """Base repository providing common CRUD operations."""
+
     def __init__(self, model: Type[ModelType], db: Session):
-        """
-        Initialize repository.
-        
-        Args:
-            model: SQLAlchemy model class
-            db: Database session
-        """
+        """Initialize repository with model and session."""
         self.model = model
         self.db = db
-    
+
     def get_by_id(self, id: int) -> Optional[ModelType]:
-        """
-        Get entity by ID.
-        
-        Args:
-            id: Entity ID
-            
-        Returns:
-            Entity or None if not found
-        """
+        """Get entity by ID."""
         try:
             return self.db.query(self.model).filter(
                 self.model.id == id
@@ -55,18 +37,7 @@ class BaseRepository(Generic[ModelType]):
         order_by: Optional[str] = None,
         order_direction: str = "desc"
     ) -> List[ModelType]:
-        """
-        Get all entities with pagination.
-        
-        Args:
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-            order_by: Field to order by
-            order_direction: "asc" or "desc"
-            
-        Returns:
-            List of entities
-        """
+        """Get all entities with pagination."""
         try:
             query = self.db.query(self.model)
             
@@ -86,15 +57,7 @@ class BaseRepository(Generic[ModelType]):
             raise DatabaseError(f"Failed to get {self.model.__name__} list") from e
     
     def create(self, **kwargs) -> ModelType:
-        """
-        Create new entity.
-        
-        Args:
-            **kwargs: Entity attributes
-            
-        Returns:
-            Created entity
-        """
+        """Create new entity."""
         try:
             entity = self.model(**kwargs)
             self.db.add(entity)
@@ -110,16 +73,7 @@ class BaseRepository(Generic[ModelType]):
             raise DatabaseError(f"Failed to create {self.model.__name__}") from e
     
     def update(self, id: int, **kwargs) -> Optional[ModelType]:
-        """
-        Update entity by ID.
-        
-        Args:
-            id: Entity ID
-            **kwargs: Attributes to update
-            
-        Returns:
-            Updated entity or None if not found
-        """
+        """Update entity by ID."""
         try:
             entity = self.get_by_id(id)
             
@@ -142,15 +96,7 @@ class BaseRepository(Generic[ModelType]):
             raise DatabaseError(f"Failed to update {self.model.__name__}") from e
     
     def delete(self, id: int) -> bool:
-        """
-        Delete entity by ID.
-        
-        Args:
-            id: Entity ID
-            
-        Returns:
-            True if deleted, False if not found
-        """
+        """Delete entity by ID."""
         try:
             entity = self.get_by_id(id)
             
@@ -169,15 +115,7 @@ class BaseRepository(Generic[ModelType]):
             raise DatabaseError(f"Failed to delete {self.model.__name__}") from e
     
     def count(self, filters: Optional[Dict[str, Any]] = None) -> int:
-        """
-        Count entities with optional filters.
-        
-        Args:
-            filters: Optional filter dictionary
-            
-        Returns:
-            Count of entities
-        """
+        """Count entities with optional filters."""
         try:
             query = self.db.query(self.model)
             
@@ -193,15 +131,7 @@ class BaseRepository(Generic[ModelType]):
             raise DatabaseError(f"Failed to count {self.model.__name__}") from e
     
     def exists(self, id: int) -> bool:
-        """
-        Check if entity exists by ID.
-        
-        Args:
-            id: Entity ID
-            
-        Returns:
-            True if exists, False otherwise
-        """
+        """Check if entity exists by ID."""
         try:
             return self.db.query(self.model).filter(
                 self.model.id == id
@@ -211,15 +141,7 @@ class BaseRepository(Generic[ModelType]):
             raise DatabaseError(f"Failed to check {self.model.__name__} existence") from e
     
     def bulk_create(self, entities: List[Dict[str, Any]]) -> List[ModelType]:
-        """
-        Bulk create entities.
-        
-        Args:
-            entities: List of entity dictionaries
-            
-        Returns:
-            List of created entities
-        """
+        """Bulk create entities."""
         try:
             created = []
             
