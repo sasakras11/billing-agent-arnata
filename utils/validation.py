@@ -47,16 +47,7 @@ def validate_container_number(container_number: str) -> str:
 
 
 def _calculate_container_check_digit(container_base: str) -> int:
-    """
-    Calculate ISO 6346 check digit for container number.
-    
-    Args:
-        container_base: First 10 characters (4 letters + 6 digits)
-        
-    Returns:
-        Check digit (0-9)
-    """
-    # Letter to number mapping (A=10, B=12, C=13, etc.)
+    """Calculate ISO 6346 check digit for container number (first 10 chars)."""
     letter_values = {
         'A': 10, 'B': 12, 'C': 13, 'D': 14, 'E': 15, 'F': 16, 'G': 17,
         'H': 18, 'I': 19, 'J': 20, 'K': 21, 'L': 23, 'M': 24, 'N': 25,
@@ -73,8 +64,6 @@ def _calculate_container_check_digit(container_base: str) -> int:
         
         # Multiply by position weight (2^i)
         total += value * (2 ** i)
-    
-    # Check digit is remainder mod 11, mod 10
     check_digit = (total % 11) % 10
     
     return check_digit
