@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     
     # Anthropic Claude
     anthropic_api_key: str
+    llm_model: str = "claude-3-5-sonnet-20241022"
+    llm_temperature_default: float = 0.3
+    llm_temperature_creative: float = 0.5
     
     # Notifications
     sendgrid_api_key: Optional[str] = None
