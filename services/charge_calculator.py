@@ -65,6 +65,29 @@ class ChargeCalculator:
             return 0
         return max(0, (end_date - charge_start).days)
 
+    def _calc(
+        self,
+        container: Container,
+        customer: Customer,
+        start_date: Optional[date],
+        end_date: date,
+        free_days: int,
+        rate_field: str,
+        default_rate: float,
+        stored_start: Optional[date],
+        label: str,
+    ) -> Tuple[int, float]:
+        """Core per-day charge calculation shared by per diem, demurrage, and detention."""
+        days = self._calculate_charge_days(
+            start_date, end_date, validate_days(free_days, rate_field), stored_start
+        )
+        if days == 0:
+            return (0, 0.0)
+        rate = self._get_customer_rate(customer, rate_field, default_rate)
+        amount = days * rate
+        logger.info(f"{label} for {container.container_number}: {days} days × ${rate} = ${amount}")
+        return (days, amount)
+
     def calculate_per_diem(
         self,
         container: Container,
@@ -76,27 +99,20 @@ class ChargeCalculator:
             as_of_date = as_of_date or date.today()
             if not container.picked_up:
                 return (0, 0.0)
-            
-            end_date = container.returned_empty.date() if container.returned_empty else as_of_date
-            start_date = container.picked_up.date()
-            free_days = customer.per_diem_free_days or customer.free_days or settings.default_free_days
-            
-            days = self._calculate_charge_days(
-                start_date, end_date, validate_days(free_days, "per_diem_free_days"),
-                container.per_diem_starts
+            return self._calc(
+                container, customer,
+                start_date=container.picked_up.date(),
+                end_date=container.returned_empty.date() if container.returned_empty else as_of_date,
+                free_days=customer.per_diem_free_days or customer.free_days or settings.default_free_days,
+                rate_field='per_diem_rate',
+                default_rate=settings.default_per_diem_rate,
+                stored_start=container.per_diem_starts,
+                label="Per diem",
             )
-            
-            if days == 0:
-                return (0, 0.0)
-            
-            rate = self._get_customer_rate(customer, 'per_diem_rate', settings.default_per_diem_rate)
-            amount = days * rate
-            logger.info(f"Per diem for {container.container_number}: {days} days × ${rate} = ${amount}")
-            return (days, amount)
         except Exception as e:
             logger.error(f"Error calculating per diem: {e}")
             return (0, 0.0)
-    
+
     def calculate_demurrage(
         self,
         container: Container,
@@ -108,27 +124,20 @@ class ChargeCalculator:
             as_of_date = as_of_date or date.today()
             if not container.vessel_discharged:
                 return (0, 0.0)
-            
-            end_date = container.picked_up.date() if container.picked_up else as_of_date
-            start_date = container.vessel_discharged.date()
-            free_days = customer.demurrage_free_days or settings.default_free_days
-            
-            days = self._calculate_charge_days(
-                start_date, end_date, validate_days(free_days, "demurrage_free_days"),
-                container.demurrage_starts
+            return self._calc(
+                container, customer,
+                start_date=container.vessel_discharged.date(),
+                end_date=container.picked_up.date() if container.picked_up else as_of_date,
+                free_days=customer.demurrage_free_days or settings.default_free_days,
+                rate_field='demurrage_rate',
+                default_rate=settings.default_demurrage_rate,
+                stored_start=container.demurrage_starts,
+                label="Demurrage",
             )
-            
-            if days == 0:
-                return (0, 0.0)
-            
-            rate = self._get_customer_rate(customer, 'demurrage_rate', settings.default_demurrage_rate)
-            amount = days * rate
-            logger.info(f"Demurrage for {container.container_number}: {days} days × ${rate} = ${amount}")
-            return (days, amount)
         except Exception as e:
             logger.error(f"Error calculating demurrage: {e}")
             return (0, 0.0)
-    
+
     def calculate_detention(
         self,
         container: Container,
@@ -140,19 +149,16 @@ class ChargeCalculator:
             as_of_date = as_of_date or date.today()
             if not container.picked_up:
                 return (0, 0.0)
-            
-            end_date = container.delivered.date() if container.delivered else as_of_date
-            start_date = container.picked_up.date()
-            
-            days = self._calculate_charge_days(start_date, end_date, 1)
-            
-            if days == 0:
-                return (0, 0.0)
-            
-            rate = self._get_customer_rate(customer, 'detention_rate', settings.default_detention_rate)
-            amount = days * rate
-            logger.info(f"Detention for {container.container_number}: {days} days × ${rate} = ${amount}")
-            return (days, amount)
+            return self._calc(
+                container, customer,
+                start_date=container.picked_up.date(),
+                end_date=container.delivered.date() if container.delivered else as_of_date,
+                free_days=1,
+                rate_field='detention_rate',
+                default_rate=settings.default_detention_rate,
+                stored_start=None,
+                label="Detention",
+            )
         except Exception as e:
             logger.error(f"Error calculating detention: {e}")
             return (0, 0.0)
