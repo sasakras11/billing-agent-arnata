@@ -1,20 +1,4 @@
-"""
-Billing Agent Module
-
-This module provides the core BillingAgent class responsible for processing
-load billing, charge calculations, invoice generation, and QuickBooks synchronization.
-
-The BillingAgent orchestrates the billing workflow by:
-- Calculating charges using configurable rate tables
-- Generating invoices based on customer preferences
-- Syncing billing data to QuickBooks when enabled
-- Providing preview and summary capabilities
-
-Example:
-    agent = BillingAgent(db_session)
-    invoice = agent.process_load_billing(load, auto_send=True)
-"""
-
+"""Billing Agent: charge calculation, invoice generation, and QuickBooks sync."""
 import logging
 import time
 from typing import Optional, Dict, Any
@@ -26,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from models import Load, Invoice, Charge, ChargeType
 from services.charge_calculator import ChargeCalculator
 from services.invoice_generator import InvoiceGenerator
+from repositories.invoice_repository import InvoiceRepository
 from exceptions import (
     ChargeCalculationError,
     InvoiceGenerationError,
@@ -49,6 +34,7 @@ class BillingAgent:
         self.db = db
         self.charge_calculator = ChargeCalculator(db)
         self.invoice_generator = InvoiceGenerator(db)
+        self.invoice_repo = InvoiceRepository(db)
     
     def process_load_billing(
         self,
@@ -225,33 +211,14 @@ class BillingAgent:
             ) from e
     
     def get_billing_summary(self, load: Load) -> Dict[str, Any]:
-        """
-        Get a comprehensive billing summary for a load.
-        
-        Args:
-            load: Load to get summary for
-            
-        Returns:
-            Dictionary containing billing summary
-        """
+        """Get a comprehensive billing summary for a load."""
         logger.info(f"Getting billing summary for load {load.id}")
-        
+
         try:
-            # Get existing charges from database
             existing_charges = (
-                self.db.query(Charge)
-                .filter(Charge.load_id == load.id)
-                .all()
+                self.db.query(Charge).filter(Charge.load_id == load.id).all()
             )
-            
-            # Get existing invoices (via charges linked to this load)
-            existing_invoices = (
-                self.db.query(Invoice)
-                .join(Charge, Charge.invoice_id == Invoice.id)
-                .filter(Charge.load_id == load.id)
-                .distinct()
-                .all()
-            )
+            existing_invoices = self.invoice_repo.get_by_load(load.id)
             
             total_charges = sum(c.amount for c in existing_charges)
             total_invoiced = sum(i.total_amount for i in existing_invoices)

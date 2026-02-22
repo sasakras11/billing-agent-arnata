@@ -210,6 +210,17 @@ class InvoiceRepository(BaseRepository[Invoice]):
         logger.info(f"Marked invoice {invoice.invoice_number} as paid")
         return invoice
     
+    def get_by_load(self, load_id: int) -> List[Invoice]:
+        """Get distinct invoices that have charges linked to a load."""
+        from models import Charge
+        return (
+            self.db.query(Invoice)
+            .join(Charge, Charge.invoice_id == Invoice.id)
+            .filter(Charge.load_id == load_id)
+            .distinct()
+            .all()
+        )
+
     def mark_as_sent(self, invoice_id: int) -> Optional[Invoice]:
         """
         Mark invoice as sent.
