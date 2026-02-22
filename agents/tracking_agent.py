@@ -3,42 +3,27 @@ import logging
 from datetime import datetime
 from typing import List, Dict, Optional, Any
 
-from langchain_anthropic import ChatAnthropic
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema import HumanMessage, SystemMessage
 from sqlalchemy.orm import Session
 
 from models import Container, Load, Customer, ContainerEvent
 from integrations.terminal49_client import Terminal49Client
 from services.alert_service import AlertService
 from services.charge_calculator import ChargeCalculator
+from agents.base_agent import BaseAgent
 from config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-class TrackingAgent:
+class TrackingAgent(BaseAgent):
     """AI Agent for monitoring and tracking containers."""
-    
+
     def __init__(self, db: Session):
-        """
-        Initialize tracking agent.
-        
-        Args:
-            db: Database session
-        """
-        self.db = db
+        super().__init__(db, temperature=settings.llm_temperature_default)
         self.terminal49 = Terminal49Client()
         self.alert_service = AlertService(db)
         self.charge_calculator = ChargeCalculator(db)
-        
-        # Initialize Claude LLM
-        self.llm = ChatAnthropic(
-            model="claude-3-5-sonnet-20241022",
-            anthropic_api_key=settings.anthropic_api_key,
-            temperature=0.3,
-        )
     
     async def start_tracking_container(
         self,
@@ -245,21 +230,9 @@ class TrackingAgent:
             logger.error(f"Error checking alerts: {e}")
             return []
     
-    async def analyze_container_risk(
-        self,
-        container: Container
-    ) -> Dict[str, Any]:
-        """
-        Use AI to analyze container for charge risk.
-        
-        Args:
-            container: Container object
-            
-        Returns:
-            Analysis dictionary
-        """
+    async def analyze_container_risk(self, container: Container) -> Dict[str, Any]:
+        """Use AI to analyze container for charge risk."""
         try:
-            # Prepare container data for AI
             container_data = {
                 "container_number": container.container_number,
                 "current_status": container.current_status,
@@ -274,110 +247,64 @@ class TrackingAgent:
                 "demurrage_days": container.demurrage_days,
                 "holds": container.holds,
             }
-            
-            # Create prompt
-            prompt = ChatPromptTemplate.from_messages([
-                SystemMessage(content="""You are an expert in intermodal trucking and container logistics. 
-                Analyze the container status and provide risk assessment for potential charges (per diem, demurrage, detention).
-                Consider:
-                - Current location and status
-                - Time elapsed since key milestones
-                - Any holds or delays
-                - Free time remaining
-                
-                Provide a risk level (low, medium, high, critical) and specific recommendations."""),
-                HumanMessage(content=f"Analyze this container: {container_data}")
-            ])
-            
-            # Get AI analysis
-            response = await self.llm.ainvoke(prompt.format_messages())
-            
-            analysis = {
+            content = await self._invoke_llm(
+                system_message="""You are an expert in intermodal trucking and container logistics.
+                Assess risk for per diem, demurrage, and detention charges based on container status,
+                time elapsed since milestones, holds, and free time remaining.
+                Provide a risk level (low/medium/high/critical) and specific recommendations.""",
+                human_message=f"Analyze this container: {container_data}",
+                log_message=f"AI analysis completed for container {container.container_number}",
+            )
+            return {
                 "container_number": container.container_number,
-                "analysis": response.content,
+                "analysis": content,
                 "timestamp": datetime.utcnow().isoformat(),
             }
-            
-            logger.info(f"AI analysis completed for container {container.container_number}")
-            return analysis
-            
         except Exception as e:
             logger.error(f"Error analyzing container risk: {e}")
-            return {
-                "error": str(e),
-                "container_number": container.container_number,
-            }
-    
+            return {"error": str(e), "container_number": container.container_number}
+
     async def should_prepull_container(
         self,
         container: Container,
-        customer: Customer
+        customer: Customer,
     ) -> Dict[str, Any]:
-        """
-        AI decision: Should we pre-pull this container?
-        
-        Args:
-            container: Container object
-            customer: Customer object
-            
-        Returns:
-            Decision dictionary with reasoning
-        """
+        """AI decision: Should we pre-pull this container?"""
         try:
-            # Calculate potential savings
-            days_until_last_free = 0
-            if container.last_free_day:
-                days_until_last_free = (container.last_free_day - datetime.utcnow().date()).days
-            
-            potential_per_diem = (
-                customer.per_diem_rate or settings.default_per_diem_rate
-            ) * max(0, 3)  # Estimate 3 days saved
-            
+            days_until_last_free = (
+                (container.last_free_day - datetime.utcnow().date()).days
+                if container.last_free_day else 0
+            )
             prepull_cost = customer.pre_pull_fee or 75.0
-            
-            # Prepare data for AI
+            per_diem_rate = customer.per_diem_rate or settings.default_per_diem_rate
+            estimated_savings = per_diem_rate * max(0, 3) - prepull_cost  # estimate 3 days saved
+
             decision_data = {
                 "container_number": container.container_number,
                 "location": container.location,
                 "available_for_pickup": container.available_for_pickup.isoformat() if container.available_for_pickup else None,
                 "days_until_last_free": days_until_last_free,
                 "prepull_cost": prepull_cost,
-                "potential_per_diem_per_day": customer.per_diem_rate or settings.default_per_diem_rate,
-                "estimated_savings": potential_per_diem - prepull_cost,
+                "potential_per_diem_per_day": per_diem_rate,
+                "estimated_savings": estimated_savings,
             }
-            
-            # Create prompt
-            prompt = ChatPromptTemplate.from_messages([
-                SystemMessage(content="""You are an expert logistics analyst specializing in cost optimization.
-                Analyze whether pre-pulling this container makes financial sense.
-                Consider:
-                - Pre-pull fee vs potential per diem charges
-                - Days remaining until charges start
-                - Current location and availability
-                - Risk of delays
-                
-                Provide a clear YES or NO decision with detailed reasoning."""),
-                HumanMessage(content=f"Should we pre-pull this container? {decision_data}")
-            ])
-            
-            # Get AI decision
-            response = await self.llm.ainvoke(prompt.format_messages())
-            
-            decision = {
+            content = await self._invoke_llm(
+                system_message="""You are an expert logistics analyst specializing in cost optimization.
+                Decide whether pre-pulling this container makes financial sense.
+                Consider pre-pull fee vs per diem savings, days until charges start, location, and delay risk.
+                Provide a clear YES or NO decision with detailed reasoning.""",
+                human_message=f"Should we pre-pull this container? {decision_data}",
+                log_message=f"Pre-pull decision generated for {container.container_number}",
+            )
+            recommendation = "YES" if "YES" in content.upper()[:50] else "NO"
+            logger.info(f"Pre-pull decision for {container.container_number}: {recommendation}")
+            return {
                 "container_number": container.container_number,
-                "recommendation": "YES" if "YES" in response.content.upper()[:50] else "NO",
-                "reasoning": response.content,
-                "estimated_savings": decision_data["estimated_savings"],
+                "recommendation": recommendation,
+                "reasoning": content,
+                "estimated_savings": estimated_savings,
                 "timestamp": datetime.utcnow().isoformat(),
             }
-            
-            logger.info(
-                f"Pre-pull decision for {container.container_number}: "
-                f"{decision['recommendation']}"
-            )
-            
-            return decision
-            
         except Exception as e:
             logger.error(f"Error making pre-pull decision: {e}")
             return {
