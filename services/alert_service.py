@@ -44,223 +44,124 @@ class AlertService:
             self.twilio_client = None
             logger.warning("Twilio credentials not configured")
     
+    def _save_alert(self, alert: Alert, log_message: str) -> Optional[Alert]:
+        """Persist an alert and log; rollback and return None on error."""
+        try:
+            self.db.add(alert)
+            self.db.commit()
+            logger.info(log_message)
+            return alert
+        except Exception as e:
+            logger.error(f"Error saving alert: {e}")
+            self.db.rollback()
+            return None
+
     def create_per_diem_alert(
-        self,
-        container: Container,
-        customer: Customer,
-        hours_until: int
+        self, container: Container, customer: Customer, hours_until: int
     ) -> Optional[Alert]:
-        """
-        Create per diem warning alert.
-        
-        Args:
-            container: Container object
-            customer: Customer object
-            hours_until: Hours until per diem starts
-            
-        Returns:
-            Alert object or None
-        """
-        try:
-            # Check if alert already exists
-            existing = (
-                self.db.query(Alert)
-                .filter(
-                    Alert.container_id == container.id,
-                    Alert.alert_type == AlertType.PER_DIEM_WARNING,
-                    Alert.status.in_([AlertStatus.PENDING, AlertStatus.SENT])
-                )
-                .first()
+        """Create per diem warning alert."""
+        existing = (
+            self.db.query(Alert)
+            .filter(
+                Alert.container_id == container.id,
+                Alert.alert_type == AlertType.PER_DIEM_WARNING,
+                Alert.status.in_([AlertStatus.PENDING, AlertStatus.SENT]),
             )
-            
-            if existing:
-                logger.info(f"Per diem alert already exists for container {container.container_number}")
-                return existing
-            
-            # Determine priority
-            if hours_until <= 6:
-                priority = "urgent"
-            elif hours_until <= 24:
-                priority = "high"
-            else:
-                priority = "medium"
-            
-            # Create alert
-            alert = Alert(
-                alert_type=AlertType.PER_DIEM_WARNING,
-                priority=priority,
-                customer_id=customer.id,
-                container_id=container.id,
-                load_id=container.load.id if container.load else None,
-                recipient_email=customer.alert_email or customer.email,
-                recipient_phone=customer.alert_phone or customer.phone,
-                subject=f"⚠️ Per Diem Alert: Container {container.container_number}",
-                message=self._format_per_diem_message(container, hours_until),
-                send_email=customer.send_alerts and bool(customer.alert_email or customer.email),
-                send_sms=priority == "urgent" and bool(customer.alert_phone or customer.phone),
-                scheduled_for=datetime.utcnow(),
-                metadata={
-                    "container_number": container.container_number,
-                    "hours_until": hours_until,
-                    "per_diem_starts": container.per_diem_starts.isoformat() if container.per_diem_starts else None,
-                },
-            )
-            
-            self.db.add(alert)
-            self.db.commit()
-            
-            logger.info(
-                f"Created per diem alert for container {container.container_number}, "
-                f"priority: {priority}"
-            )
-            
-            return alert
-            
-        except Exception as e:
-            logger.error(f"Error creating per diem alert: {e}")
-            self.db.rollback()
-            return None
-    
+            .first()
+        )
+        if existing:
+            logger.info(f"Per diem alert already exists for container {container.container_number}")
+            return existing
+
+        priority = "urgent" if hours_until <= 6 else "high" if hours_until <= 24 else "medium"
+        alert = Alert(
+            alert_type=AlertType.PER_DIEM_WARNING,
+            priority=priority,
+            customer_id=customer.id,
+            container_id=container.id,
+            load_id=container.load.id if container.load else None,
+            recipient_email=customer.alert_email or customer.email,
+            recipient_phone=customer.alert_phone or customer.phone,
+            subject=f"⚠️ Per Diem Alert: Container {container.container_number}",
+            message=self._format_per_diem_message(container, hours_until),
+            send_email=customer.send_alerts and bool(customer.alert_email or customer.email),
+            send_sms=priority == "urgent" and bool(customer.alert_phone or customer.phone),
+            scheduled_for=datetime.utcnow(),
+            metadata={
+                "container_number": container.container_number,
+                "hours_until": hours_until,
+                "per_diem_starts": container.per_diem_starts.isoformat() if container.per_diem_starts else None,
+            },
+        )
+        return self._save_alert(
+            alert,
+            f"Created per diem alert for container {container.container_number}, priority: {priority}",
+        )
+
     def create_container_available_alert(
-        self,
-        container: Container,
-        customer: Customer
+        self, container: Container, customer: Customer
     ) -> Optional[Alert]:
-        """
-        Create alert when container is available for pickup.
-        
-        Args:
-            container: Container object
-            customer: Customer object
-            
-        Returns:
-            Alert object or None
-        """
-        try:
-            alert = Alert(
-                alert_type=AlertType.CONTAINER_AVAILABLE,
-                priority="high",
-                customer_id=customer.id,
-                container_id=container.id,
-                load_id=container.load.id if container.load else None,
-                recipient_email=customer.alert_email or customer.email,
-                recipient_phone=customer.alert_phone or customer.phone,
-                subject=f"📦 Container Available: {container.container_number}",
-                message=self._format_available_message(container),
-                send_email=True,
-                scheduled_for=datetime.utcnow(),
-                metadata={
-                    "container_number": container.container_number,
-                    "location": container.location,
-                    "last_free_day": container.last_free_day.isoformat() if container.last_free_day else None,
-                },
-            )
-            
-            self.db.add(alert)
-            self.db.commit()
-            
-            logger.info(f"Created availability alert for container {container.container_number}")
-            return alert
-            
-        except Exception as e:
-            logger.error(f"Error creating availability alert: {e}")
-            self.db.rollback()
-            return None
-    
+        """Create alert when container is available for pickup."""
+        alert = Alert(
+            alert_type=AlertType.CONTAINER_AVAILABLE,
+            priority="high",
+            customer_id=customer.id,
+            container_id=container.id,
+            load_id=container.load.id if container.load else None,
+            recipient_email=customer.alert_email or customer.email,
+            recipient_phone=customer.alert_phone or customer.phone,
+            subject=f"📦 Container Available: {container.container_number}",
+            message=self._format_available_message(container),
+            send_email=True,
+            scheduled_for=datetime.utcnow(),
+            metadata={
+                "container_number": container.container_number,
+                "location": container.location,
+                "last_free_day": container.last_free_day.isoformat() if container.last_free_day else None,
+            },
+        )
+        return self._save_alert(alert, f"Created availability alert for container {container.container_number}")
+
     def create_charge_accruing_alert(
-        self,
-        container: Container,
-        customer: Customer,
-        charge_type: str,
-        daily_rate: float
+        self, container: Container, customer: Customer, charge_type: str, daily_rate: float
     ) -> Optional[Alert]:
-        """
-        Create alert when charges are actively accruing.
-        
-        Args:
-            container: Container object
-            customer: Customer object
-            charge_type: Type of charge (per_diem, demurrage, etc.)
-            daily_rate: Rate per day
-            
-        Returns:
-            Alert object or None
-        """
-        try:
-            alert = Alert(
-                alert_type=AlertType.CHARGE_ACCRUING,
-                priority="urgent",
-                customer_id=customer.id,
-                container_id=container.id,
-                load_id=container.load.id if container.load else None,
-                recipient_email=customer.alert_email or customer.email,
-                recipient_phone=customer.alert_phone or customer.phone,
-                subject=f"🚨 Charges Accruing: Container {container.container_number}",
-                message=self._format_accruing_message(container, charge_type, daily_rate),
-                send_email=True,
-                send_sms=True,
-                scheduled_for=datetime.utcnow(),
-                metadata={
-                    "container_number": container.container_number,
-                    "charge_type": charge_type,
-                    "daily_rate": daily_rate,
-                },
-            )
-            
-            self.db.add(alert)
-            self.db.commit()
-            
-            logger.info(f"Created charge accruing alert for container {container.container_number}")
-            return alert
-            
-        except Exception as e:
-            logger.error(f"Error creating charge accruing alert: {e}")
-            self.db.rollback()
-            return None
-    
-    def create_invoice_alert(
-        self,
-        invoice: Invoice,
-        customer: Customer
-    ) -> Optional[Alert]:
-        """
-        Create alert when invoice is created.
-        
-        Args:
-            invoice: Invoice object
-            customer: Customer object
-            
-        Returns:
-            Alert object or None
-        """
-        try:
-            alert = Alert(
-                alert_type=AlertType.INVOICE_CREATED,
-                priority="medium",
-                customer_id=customer.id,
-                invoice_id=invoice.id,
-                recipient_email=customer.alert_email or customer.email,
-                subject=f"💰 Invoice Created: {invoice.invoice_number}",
-                message=self._format_invoice_message(invoice),
-                send_email=True,
-                scheduled_for=datetime.utcnow(),
-                metadata={
-                    "invoice_number": invoice.invoice_number,
-                    "total_amount": float(invoice.total_amount),
-                    "due_date": invoice.due_date.isoformat() if invoice.due_date else None,
-                },
-            )
-            
-            self.db.add(alert)
-            self.db.commit()
-            
-            logger.info(f"Created invoice alert for {invoice.invoice_number}")
-            return alert
-            
-        except Exception as e:
-            logger.error(f"Error creating invoice alert: {e}")
-            self.db.rollback()
-            return None
+        """Create alert when charges are actively accruing."""
+        alert = Alert(
+            alert_type=AlertType.CHARGE_ACCRUING,
+            priority="urgent",
+            customer_id=customer.id,
+            container_id=container.id,
+            load_id=container.load.id if container.load else None,
+            recipient_email=customer.alert_email or customer.email,
+            recipient_phone=customer.alert_phone or customer.phone,
+            subject=f"🚨 Charges Accruing: Container {container.container_number}",
+            message=self._format_accruing_message(container, charge_type, daily_rate),
+            send_email=True,
+            send_sms=True,
+            scheduled_for=datetime.utcnow(),
+            metadata={"container_number": container.container_number, "charge_type": charge_type, "daily_rate": daily_rate},
+        )
+        return self._save_alert(alert, f"Created charge accruing alert for container {container.container_number}")
+
+    def create_invoice_alert(self, invoice: Invoice, customer: Customer) -> Optional[Alert]:
+        """Create alert when invoice is created."""
+        alert = Alert(
+            alert_type=AlertType.INVOICE_CREATED,
+            priority="medium",
+            customer_id=customer.id,
+            invoice_id=invoice.id,
+            recipient_email=customer.alert_email or customer.email,
+            subject=f"💰 Invoice Created: {invoice.invoice_number}",
+            message=self._format_invoice_message(invoice),
+            send_email=True,
+            scheduled_for=datetime.utcnow(),
+            metadata={
+                "invoice_number": invoice.invoice_number,
+                "total_amount": float(invoice.total_amount),
+                "due_date": invoice.due_date.isoformat() if invoice.due_date else None,
+            },
+        )
+        return self._save_alert(alert, f"Created invoice alert for {invoice.invoice_number}")
     
     def send_pending_alerts(self, limit: int = 50) -> int:
         """
