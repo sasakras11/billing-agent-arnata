@@ -3,7 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from models import get_db, Container, Customer, Invoice
+from models import get_db
+from repositories.container_repository import ContainerRepository
+from repositories.invoice_repository import InvoiceRepository
 from agents import TrackingAgent, BillingAgent, DisputeAgent
 
 router = APIRouter()
@@ -24,9 +26,10 @@ class DisputeRequest(BaseModel):
 
 def _find_container_in_query(query_text: str, db: Session):
     """Extract container number from query (11 alphanumeric chars) and fetch from DB."""
+    repo = ContainerRepository(db)
     for word in query_text.split():
         if len(word) == 11 and word.isalnum():
-            return db.query(Container).filter(Container.container_number == word.upper()).first()
+            return repo.get_by_container_number(word.upper())
     return None
 
 
@@ -47,7 +50,7 @@ async def agent_query(request: QueryRequest, db: Session = Depends(get_db)):
 @router.post("/analyze")
 async def analyze_container(request: AnalyzeRequest, db: Session = Depends(get_db)):
     """Analyze container for charge risk."""
-    container = db.query(Container).filter(Container.container_number == request.container_number).first()
+    container = ContainerRepository(db).get_by_container_number(request.container_number)
     if not container:
         raise HTTPException(status_code=404, detail="Container not found")
     return await TrackingAgent(db).analyze_container_risk(container)
@@ -56,8 +59,7 @@ async def analyze_container(request: AnalyzeRequest, db: Session = Depends(get_d
 @router.post("/draft-dispute-response")
 async def draft_dispute_response(request: DisputeRequest, db: Session = Depends(get_db)):
     """Draft response to invoice dispute."""
-    invoice = db.query(Invoice).filter(Invoice.id == request.invoice_id).first()
+    invoice = InvoiceRepository(db).get_by_id(request.invoice_id)
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     return await DisputeAgent(db).draft_dispute_response(invoice, request.reason)
-
