@@ -1,14 +1,14 @@
 """Alert and notification service."""
 import logging
-from datetime import datetime, timedelta
-from typing import List, Optional
+from datetime import datetime
+from typing import Optional
 
 from sqlalchemy.orm import Session
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from twilio.rest import Client as TwilioClient
 
-from models import Alert, AlertType, AlertStatus, Container, Load, Invoice, Customer
+from models import Alert, AlertType, AlertStatus, Container, Invoice, Customer
 from config import get_settings
 
 logger = logging.getLogger(__name__)
