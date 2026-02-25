@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from models import get_db
 from repositories.container_repository import ContainerRepository
 from repositories.invoice_repository import InvoiceRepository
-from agents import TrackingAgent, BillingAgent, DisputeAgent
+from agents import TrackingAgent, DisputeAgent
 
 router = APIRouter()
 
