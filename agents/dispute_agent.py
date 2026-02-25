@@ -6,7 +6,7 @@ from enum import Enum
 
 from sqlalchemy.orm import Session
 
-from models import Invoice, Customer, Charge
+from models import Invoice, Customer
 from config import get_settings
 from agents.base_agent import BaseAgent
 
