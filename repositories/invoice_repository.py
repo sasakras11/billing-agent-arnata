@@ -5,7 +5,7 @@ from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
-from models import Invoice, InvoiceStatus
+from models import Invoice, InvoiceStatus, Charge
 from repositories.base import BaseRepository
 from logging_config import get_logger
 
@@ -212,7 +212,6 @@ class InvoiceRepository(BaseRepository[Invoice]):
     
     def get_by_load(self, load_id: int) -> List[Invoice]:
         """Get distinct invoices that have charges linked to a load."""
-        from models import Charge
         return (
             self.db.query(Invoice)
             .join(Charge, Charge.invoice_id == Invoice.id)
