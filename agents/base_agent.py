@@ -2,7 +2,6 @@
 import logging
 
 from langchain_anthropic import ChatAnthropic
-from langchain.prompts import ChatPromptTemplate
 from langchain.schema import HumanMessage, SystemMessage
 from sqlalchemy.orm import Session
 
@@ -30,11 +29,10 @@ class BaseAgent:
         log_message: str = "",
     ) -> str:
         """Invoke LLM and return response content."""
-        prompt = ChatPromptTemplate.from_messages([
+        response = await self.llm.ainvoke([
             SystemMessage(content=system_message),
             HumanMessage(content=human_message),
         ])
-        response = await self.llm.ainvoke(prompt.format_messages())
         if log_message:
             logger.info(log_message)
         return response.content
