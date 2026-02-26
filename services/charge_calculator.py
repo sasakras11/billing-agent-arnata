@@ -1,8 +1,7 @@
 """Charge calculation service."""
 import logging
 from datetime import date, datetime, timedelta
-from typing import List, Dict, Optional, Tuple
-from functools import lru_cache
+from typing import List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
