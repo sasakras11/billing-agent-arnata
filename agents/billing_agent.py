@@ -7,7 +7,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
-from models import Load, Invoice, Charge, ChargeType
+from models import Load, Invoice, Charge
 from services.charge_calculator import ChargeCalculator
 from services.invoice_generator import InvoiceGenerator
 from repositories.invoice_repository import InvoiceRepository
