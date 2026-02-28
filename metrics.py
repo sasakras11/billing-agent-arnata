@@ -4,7 +4,7 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, asdict
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_
+from sqlalchemy import func, and_
 
 from models import (
     Invoice,
