@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Request, Depends
 from sqlalchemy.orm import Session
 
-from models import get_db, Invoice
+from models import get_db
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
