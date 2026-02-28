@@ -1,7 +1,7 @@
 """QuickBooks Online API client."""
 import logging
 from datetime import date, datetime
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional
 
 import httpx
 from pydantic import BaseModel
