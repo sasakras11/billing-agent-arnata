@@ -4,7 +4,7 @@ from datetime import date
 from typing import Optional
 
 from exceptions import ValidationError
-from constants import MAX_CONTAINER_NUMBER_LENGTH, MIN_CONTAINER_NUMBER_LENGTH
+from constants import MIN_CONTAINER_NUMBER_LENGTH
 
 
 def validate_container_number(container_number: str) -> str:
