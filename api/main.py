@@ -2,14 +2,13 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
 
 from config import get_settings
 from logging_config import setup_logging, get_logger
-from models import get_db, init_db
+from models import init_db
 from api.routes import loads, containers, invoices, customers, agent, health
 from api.webhooks import terminal49, quickbooks
 
