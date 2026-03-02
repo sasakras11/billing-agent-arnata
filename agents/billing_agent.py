@@ -25,12 +25,6 @@ class BillingAgent:
     """Agent responsible for processing load billing and invoice generation."""
     
     def __init__(self, db: Session):
-        """
-        Initialize billing agent.
-        
-        Args:
-            db: SQLAlchemy database session
-        """
         self.db = db
         self.charge_calculator = ChargeCalculator(db)
         self.invoice_generator = InvoiceGenerator(db)
@@ -41,27 +35,7 @@ class BillingAgent:
         load: Load,
         auto_send: bool = True
     ) -> Optional[Invoice]:
-        """
-        Process billing for a load by calculating charges and generating an invoice.
-        
-        This method:
-        1. Calculates all applicable charges for the load
-        2. Saves charges to database
-        3. Generates invoice if customer has auto-invoicing enabled
-        4. Syncs invoice to QuickBooks if customer is configured
-        
-        Args:
-            load: The load to process billing for
-            auto_send: Whether to automatically send invoice to customer
-            
-        Returns:
-            Invoice if generated, None otherwise
-            
-        Raises:
-            ChargeCalculationError: If charge calculation fails
-            InvoiceGenerationError: If invoice generation fails
-            DatabaseError: If database operations fail
-        """
+        """Calculate charges, generate invoice, and sync to QuickBooks."""
         start_time = time.time()
         logger.info(f"Processing billing for load {load.id}")
         
@@ -150,18 +124,7 @@ class BillingAgent:
             raise QuickBooksAPIError(f"Failed to sync invoice {invoice.id} to QuickBooks") from e
     
     def preview_charges(self, load: Load) -> Dict[str, Any]:
-        """
-        Preview charges for a load without saving to database.
-        
-        Args:
-            load: Load to preview charges for
-            
-        Returns:
-            Dictionary containing charge preview information
-            
-        Raises:
-            ChargeCalculationError: If charge calculation fails
-        """
+        """Preview charges for a load without saving to database."""
         logger.info(f"Previewing charges for load {load.id}")
         
         try:
