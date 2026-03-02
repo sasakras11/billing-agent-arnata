@@ -28,18 +28,9 @@ class TrackingAgent(BaseAgent):
     async def start_tracking_container(
         self,
         container_number: str,
-        load: Load
+        load: Load,
     ) -> Optional[Container]:
-        """
-        Start tracking a container.
-        
-        Args:
-            container_number: Container number to track
-            load: Associated load
-            
-        Returns:
-            Container object or None
-        """
+        """Start tracking a container via Terminal49 and persist it."""
         try:
             # Check if already tracking
             existing = (
@@ -136,15 +127,7 @@ class TrackingAgent(BaseAgent):
         self,
         container: Container
     ) -> bool:
-        """
-        Update container status from Terminal49.
-        
-        Args:
-            container: Container object
-            
-        Returns:
-            True if updated successfully
-        """
+        """Update container status from Terminal49."""
         try:
             if not container.terminal49_tracking_id:
                 logger.warning(f"Container {container.id} has no tracking ID")
@@ -184,15 +167,7 @@ class TrackingAgent(BaseAgent):
             return False
     
     def check_alerts(self, container: Container) -> List[str]:
-        """
-        Check if alerts should be sent for container.
-        
-        Args:
-            container: Container object
-            
-        Returns:
-            List of alert messages
-        """
+        """Check if alerts should be sent for container."""
         try:
             alerts = []
             
