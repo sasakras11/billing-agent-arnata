@@ -12,66 +12,28 @@ logger = get_logger(__name__)
 
 class CustomerRepository(BaseRepository[Customer]):
     """Repository for customer-specific database operations."""
-    
+
     def __init__(self, db: Session):
-        """
-        Initialize customer repository.
-        
-        Args:
-            db: Database session
-        """
         super().__init__(Customer, db)
-    
+
     def get_by_name(self, name: str) -> Optional[Customer]:
-        """
-        Get customer by name.
-        
-        Args:
-            name: Customer name
-            
-        Returns:
-            Customer or None
-        """
-        return self.db.query(Customer).filter(
-            Customer.name == name
-        ).first()
-    
+        """Get customer by name."""
+        return self.db.query(Customer).filter(Customer.name == name).first()
+
     def get_by_quickbooks_id(self, quickbooks_id: str) -> Optional[Customer]:
-        """
-        Get customer by QuickBooks customer ID.
-        
-        Args:
-            quickbooks_id: QuickBooks customer ID
-            
-        Returns:
-            Customer or None
-        """
+        """Get customer by QuickBooks customer ID."""
         return self.db.query(Customer).filter(
             Customer.quickbooks_customer_id == quickbooks_id
         ).first()
-    
+
     def get_active_customers(self) -> List[Customer]:
-        """
-        Get all active customers.
-        
-        Returns:
-            List of active customers
-        """
+        """Get all active customers."""
         return self.db.query(Customer).filter(
             Customer.is_active == True
         ).order_by(Customer.name.asc()).all()
-    
+
     def search_by_name(self, search_term: str) -> List[Customer]:
-        """
-        Search customers by name (case-insensitive).
-        
-        Args:
-            search_term: Search term
-            
-        Returns:
-            List of matching customers
-        """
+        """Search customers by name (case-insensitive)."""
         return self.db.query(Customer).filter(
             Customer.name.ilike(f"%{search_term}%")
         ).order_by(Customer.name.asc()).all()
-
