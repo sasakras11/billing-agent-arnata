@@ -19,12 +19,6 @@ class AlertService:
     """Manage alerts and notifications."""
     
     def __init__(self, db: Session):
-        """
-        Initialize alert service.
-        
-        Args:
-            db: Database session
-        """
         self.db = db
         
         # Initialize email client
@@ -164,15 +158,7 @@ class AlertService:
         return self._save_alert(alert, f"Created invoice alert for {invoice.invoice_number}")
     
     def send_pending_alerts(self, limit: int = 50) -> int:
-        """
-        Send all pending alerts.
-        
-        Args:
-            limit: Maximum number of alerts to send
-            
-        Returns:
-            Number of alerts sent
-        """
+        """Send all pending alerts, return count sent."""
         try:
             # Get pending alerts
             now = datetime.utcnow()
@@ -200,15 +186,7 @@ class AlertService:
             return 0
     
     def send_alert(self, alert: Alert) -> bool:
-        """
-        Send individual alert.
-        
-        Args:
-            alert: Alert object
-            
-        Returns:
-            True if successful
-        """
+        """Send an individual alert via email and/or SMS."""
         try:
             success = False
             
