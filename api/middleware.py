@@ -15,27 +15,9 @@ logger = get_logger(__name__)
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware to log all API requests and responses.
-    
-    Adds request ID to all logs and tracks request duration.
-    """
-    
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable
-    ) -> Response:
-        """
-        Process request and log details.
-        
-        Args:
-            request: Incoming HTTP request
-            call_next: Next middleware/endpoint handler
-            
-        Returns:
-            HTTP response
-        """
+    """Log all API requests/responses with request ID and duration."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Generate unique request ID
         request_id = str(uuid.uuid4())
         
@@ -98,27 +80,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
 
 class ErrorHandlingMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware to handle exceptions and return appropriate error responses.
-    
-    Converts exceptions to JSON responses with proper status codes.
-    """
-    
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable
-    ) -> Response:
-        """
-        Process request and handle errors.
-        
-        Args:
-            request: Incoming HTTP request
-            call_next: Next middleware/endpoint handler
-            
-        Returns:
-            HTTP response
-        """
+    """Convert exceptions to JSON responses with proper status codes."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         try:
             return await call_next(request)
             
@@ -175,38 +139,13 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
 
 
 class CORSHeadersMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware to add CORS headers to responses.
-    
-    Allows cross-origin requests from configured origins.
-    """
-    
+    """Add CORS headers to responses for configured origins."""
+
     def __init__(self, app, allowed_origins: list[str] | None = None):
-        """
-        Initialize CORS middleware.
-        
-        Args:
-            app: FastAPI application
-            allowed_origins: List of allowed origins (default: all)
-        """
         super().__init__(app)
         self.allowed_origins = allowed_origins or ["*"]
     
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable
-    ) -> Response:
-        """
-        Add CORS headers to response.
-        
-        Args:
-            request: Incoming HTTP request
-            call_next: Next middleware/endpoint handler
-            
-        Returns:
-            HTTP response with CORS headers
-        """
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Handle preflight requests
         if request.method == "OPTIONS":
             response = Response()
@@ -228,12 +167,7 @@ class CORSHeadersMiddleware(BaseHTTPMiddleware):
 
 
 def setup_middleware(app) -> None:
-    """
-    Add all middleware to FastAPI app.
-    
-    Args:
-        app: FastAPI application instance
-    """
+    """Register all middleware on the FastAPI app."""
     # Add middleware in reverse order (last added is executed first)
     
     # Error handling (outermost - catches all errors)
