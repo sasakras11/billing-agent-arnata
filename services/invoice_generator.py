@@ -17,13 +17,6 @@ class InvoiceGenerator:
     """Generate and manage invoices."""
     
     def __init__(self, db: Session, qb_client: Optional[QuickBooksClient] = None):
-        """
-        Initialize invoice generator.
-        
-        Args:
-            db: Database session
-            qb_client: Optional QuickBooks client (for testing)
-        """
         self.db = db
         self.qb_client = qb_client or QuickBooksClient()
     
@@ -33,17 +26,7 @@ class InvoiceGenerator:
         charges: List[Charge],
         auto_send: bool = False
     ) -> Optional[Invoice]:
-        """
-        Create invoice from load and charges.
-        
-        Args:
-            load: Load object
-            charges: List of charges to include
-            auto_send: Automatically send to customer
-            
-        Returns:
-            Invoice object or None
-        """
+        """Create invoice from load and charges; auto-send if requested."""
         try:
             customer = load.customer
             
@@ -127,15 +110,7 @@ class InvoiceGenerator:
             return None
     
     def sync_to_quickbooks(self, invoice: Invoice) -> bool:
-        """
-        Sync invoice to QuickBooks.
-        
-        Args:
-            invoice: Invoice object
-            
-        Returns:
-            True if successful
-        """
+        """Sync invoice to QuickBooks; returns True on success."""
         try:
             customer = invoice.customer
             
@@ -183,15 +158,7 @@ class InvoiceGenerator:
             return False
     
     def send_to_customer(self, invoice: Invoice) -> bool:
-        """
-        Send invoice to customer via QuickBooks.
-        
-        Args:
-            invoice: Invoice object
-            
-        Returns:
-            True if successful
-        """
+        """Send invoice to customer via QuickBooks; returns True on success."""
         try:
             if not invoice.quickbooks_invoice_id:
                 # Sync to QuickBooks first
@@ -221,15 +188,7 @@ class InvoiceGenerator:
             return False
     
     def check_payment_status(self, invoice: Invoice) -> bool:
-        """
-        Check payment status from QuickBooks.
-        
-        Args:
-            invoice: Invoice object
-            
-        Returns:
-            True if status was updated
-        """
+        """Sync payment status from QuickBooks; returns True if status was updated."""
         try:
             if not invoice.quickbooks_invoice_id:
                 return False
