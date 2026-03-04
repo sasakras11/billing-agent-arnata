@@ -42,44 +42,34 @@ class McLeodLoad(BaseModel):
 
 class McLeodClient:
     """Client for McLeod LoadMaster REST API."""
-    
+
     def __init__(self):
-        """Initialize McLeod client."""
         self.base_url = settings.mcleod_api_url
         self.api_token = settings.mcleod_api_token
         self.company_id = settings.mcleod_company_id
         self.timeout = 30.0
-        
+
         self.headers = {
             "Authorization": f"Bearer {self.api_token}",
             "Content-Type": "application/json",
             "X-Company-Id": self.company_id,
         }
-    
+
     async def get_recent_loads(
         self,
         minutes: int = 15,
         load_type: str = "drayage"
     ) -> List[McLeodLoad]:
-        """
-        Get recent loads from McLeod.
-        
-        Args:
-            minutes: Look back this many minutes
-            load_type: Filter by load type (e.g., 'drayage')
-            
-        Returns:
-            List of McLeodLoad objects
-        """
+        """Fetch loads created in the last `minutes` minutes."""
         try:
             since = datetime.utcnow() - timedelta(minutes=minutes)
-            
+
             params = {
                 "created_after": since.isoformat(),
                 "load_type": load_type,
                 "include_container": "true",
             }
-            
+
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(
                     f"{self.base_url}/api/v1/loads",
@@ -87,10 +77,10 @@ class McLeodClient:
                     params=params,
                 )
                 response.raise_for_status()
-                
+
                 data = response.json()
                 loads = []
-                
+
                 for item in data.get("loads", []):
                     try:
                         load = self._parse_load(item)
@@ -98,27 +88,19 @@ class McLeodClient:
                     except Exception as e:
                         logger.error(f"Error parsing load {item.get('order_id')}: {e}")
                         continue
-                
+
                 logger.info(f"Retrieved {len(loads)} loads from McLeod")
                 return loads
-                
+
         except httpx.HTTPError as e:
             logger.error(f"HTTP error fetching loads from McLeod: {e}")
             raise
         except Exception as e:
             logger.error(f"Error fetching loads from McLeod: {e}")
             raise
-    
+
     async def get_load_by_id(self, order_id: str) -> Optional[McLeodLoad]:
-        """
-        Get specific load by order ID.
-        
-        Args:
-            order_id: McLeod order ID
-            
-        Returns:
-            McLeodLoad object or None
-        """
+        """Get a specific load by McLeod order ID."""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(
@@ -126,10 +108,10 @@ class McLeodClient:
                     headers=self.headers,
                 )
                 response.raise_for_status()
-                
+
                 data = response.json()
                 return self._parse_load(data)
-                
+
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 logger.warning(f"Load not found: {order_id}")
@@ -139,33 +121,23 @@ class McLeodClient:
         except Exception as e:
             logger.error(f"Error fetching load {order_id}: {e}")
             raise
-    
+
     async def update_load_status(
         self,
         order_id: str,
         status: str,
         notes: Optional[str] = None
     ) -> bool:
-        """
-        Update load status in McLeod.
-        
-        Args:
-            order_id: McLeod order ID
-            status: New status
-            notes: Optional notes
-            
-        Returns:
-            True if successful
-        """
+        """Update load status in McLeod; returns True on success."""
         try:
             payload = {
                 "status": status,
                 "updated_at": datetime.utcnow().isoformat(),
             }
-            
+
             if notes:
                 payload["notes"] = notes
-            
+
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.patch(
                     f"{self.base_url}/api/v1/loads/{order_id}",
@@ -173,24 +145,16 @@ class McLeodClient:
                     json=payload,
                 )
                 response.raise_for_status()
-                
+
                 logger.info(f"Updated load {order_id} status to {status}")
                 return True
-                
+
         except Exception as e:
             logger.error(f"Error updating load {order_id}: {e}")
             return False
-    
+
     async def get_customer_info(self, customer_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get customer information from McLeod.
-        
-        Args:
-            customer_id: McLeod customer ID
-            
-        Returns:
-            Customer data dictionary
-        """
+        """Fetch customer data from McLeod by customer ID."""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(
@@ -198,9 +162,9 @@ class McLeodClient:
                     headers=self.headers,
                 )
                 response.raise_for_status()
-                
+
                 return response.json()
-                
+
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 logger.warning(f"Customer not found: {customer_id}")
@@ -210,17 +174,9 @@ class McLeodClient:
         except Exception as e:
             logger.error(f"Error fetching customer {customer_id}: {e}")
             raise
-    
+
     def _parse_load(self, data: Dict[str, Any]) -> McLeodLoad:
-        """
-        Parse raw McLeod load data into McLeodLoad model.
-        
-        Args:
-            data: Raw API response data
-            
-        Returns:
-            McLeodLoad object
-        """
+        """Parse raw McLeod API response into a McLeodLoad model."""
         # Parse dates
         pickup_date = None
         if data.get("pickup_date"):
@@ -228,7 +184,7 @@ class McLeodClient:
                 pickup_date = datetime.fromisoformat(data["pickup_date"].replace("Z", "+00:00"))
             except:
                 pass
-        
+
         scheduled_delivery_date = None
         if data.get("scheduled_delivery_date"):
             try:
@@ -237,7 +193,7 @@ class McLeodClient:
                 )
             except:
                 pass
-        
+
         actual_delivery_date = None
         if data.get("actual_delivery_date"):
             try:
@@ -246,7 +202,7 @@ class McLeodClient:
                 )
             except:
                 pass
-        
+
         return McLeodLoad(
             order_id=data["order_id"],
             load_number=data.get("load_number", data["order_id"]),
@@ -270,14 +226,9 @@ class McLeodClient:
             notes=data.get("notes"),
             raw_data=data,
         )
-    
+
     async def test_connection(self) -> bool:
-        """
-        Test connection to McLeod API.
-        
-        Returns:
-            True if connection successful
-        """
+        """Return True if the McLeod API health endpoint responds successfully."""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(
@@ -290,4 +241,3 @@ class McLeodClient:
         except Exception as e:
             logger.error(f"McLeod API connection failed: {e}")
             return False
-
