@@ -49,7 +49,6 @@ class QuickBooksClient:
     PRODUCTION_BASE_URL = "https://quickbooks.api.intuit.com/v3"
     
     def __init__(self):
-        """Initialize QuickBooks client."""
         self.client_id = settings.quickbooks_client_id
         self.client_secret = settings.quickbooks_client_secret
         self.realm_id = settings.quickbooks_realm_id
@@ -89,18 +88,7 @@ class QuickBooksClient:
         phone: Optional[str] = None,
         payment_terms: str = "Net 30"
     ) -> Optional[QBCustomer]:
-        """
-        Create customer in QuickBooks.
-        
-        Args:
-            display_name: Customer display name
-            email: Customer email
-            phone: Customer phone
-            payment_terms: Payment terms (default: Net 30)
-            
-        Returns:
-            QBCustomer object or None
-        """
+        """Create a customer in QuickBooks; returns QBCustomer or None."""
         try:
             payload = {
                 "DisplayName": display_name,
@@ -143,15 +131,7 @@ class QuickBooksClient:
             raise
     
     async def get_customer(self, customer_id: str) -> Optional[QBCustomer]:
-        """
-        Get customer by ID.
-        
-        Args:
-            customer_id: QuickBooks customer ID
-            
-        Returns:
-            QBCustomer object or None
-        """
+        """Fetch a QuickBooks customer by ID; returns None if not found."""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(
@@ -189,20 +169,7 @@ class QuickBooksClient:
         doc_number: Optional[str] = None,
         memo: Optional[str] = None
     ) -> Optional[QBInvoice]:
-        """
-        Create invoice in QuickBooks.
-        
-        Args:
-            customer_id: QuickBooks customer ID
-            line_items: List of line items
-            invoice_date: Invoice date (default: today)
-            due_date: Due date
-            doc_number: Invoice number (auto-generated if not provided)
-            memo: Invoice memo/notes
-            
-        Returns:
-            QBInvoice object or None
-        """
+        """Create an invoice in QuickBooks; returns QBInvoice or None."""
         try:
             if invoice_date is None:
                 invoice_date = date.today()
@@ -276,15 +243,7 @@ class QuickBooksClient:
             raise
     
     async def get_invoice(self, invoice_id: str) -> Optional[QBInvoice]:
-        """
-        Get invoice by ID.
-        
-        Args:
-            invoice_id: QuickBooks invoice ID
-            
-        Returns:
-            QBInvoice object or None
-        """
+        """Fetch a QuickBooks invoice by ID; returns None if not found."""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(
@@ -323,16 +282,7 @@ class QuickBooksClient:
         invoice_id: str,
         email_address: Optional[str] = None
     ) -> bool:
-        """
-        Send invoice to customer via email.
-        
-        Args:
-            invoice_id: QuickBooks invoice ID
-            email_address: Optional email address (uses customer email if not provided)
-            
-        Returns:
-            True if successful
-        """
+        """Send invoice to customer via email; returns True on success."""
         try:
             params = {}
             if email_address:
@@ -358,16 +308,7 @@ class QuickBooksClient:
         customer_id: Optional[str] = None,
         status: Optional[str] = None
     ) -> List[QBInvoice]:
-        """
-        Query invoices with filters.
-        
-        Args:
-            customer_id: Filter by customer ID
-            status: Filter by status (Open, Paid, etc.)
-            
-        Returns:
-            List of QBInvoice objects
-        """
+        """Query QuickBooks invoices with optional customer/status filters."""
         try:
             # Build query
             conditions = []
@@ -419,12 +360,7 @@ class QuickBooksClient:
             raise
     
     async def test_connection(self) -> bool:
-        """
-        Test connection to QuickBooks API.
-        
-        Returns:
-            True if connection successful
-        """
+        """Return True if the QuickBooks API responds successfully."""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(
