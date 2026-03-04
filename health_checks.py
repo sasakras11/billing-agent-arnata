@@ -231,14 +231,7 @@ class HealthCheckService:
         return result
     
     def check_readiness(self) -> Dict[str, Any]:
-        """
-        Check if application is ready to serve requests.
-        
-        Checks only critical dependencies (database, redis).
-        
-        Returns:
-            Readiness status
-        """
+        """Check if critical dependencies (database, redis) are healthy."""
         logger.info("Running readiness checks")
         
         # Check critical components
@@ -270,12 +263,7 @@ class HealthCheckService:
         return result
     
     def check_liveness(self) -> Dict[str, Any]:
-        """
-        Check if application is alive (basic health).
-        
-        Returns:
-            Liveness status
-        """
+        """Return basic liveness status."""
         return {
             "alive": True,
             "timestamp": datetime.utcnow().isoformat(),
@@ -284,14 +272,6 @@ class HealthCheckService:
 
 
 def get_health_check_service(db: Optional[Session] = None) -> HealthCheckService:
-    """
-    Get health check service instance.
-    
-    Args:
-        db: Optional database session
-        
-    Returns:
-        HealthCheckService instance
-    """
+    """Return a HealthCheckService instance."""
     return HealthCheckService(db=db)
 
