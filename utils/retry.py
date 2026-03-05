@@ -17,19 +17,7 @@ def exponential_backoff(
     max_delay: float = 60.0,
     jitter: bool = True
 ) -> float:
-    """
-    Calculate exponential backoff delay.
-    
-    Args:
-        attempt: Current attempt number (0-indexed)
-        base_delay: Initial delay in seconds
-        backoff_factor: Multiplier for each retry
-        max_delay: Maximum delay in seconds
-        jitter: Add random jitter to prevent thundering herd
-        
-    Returns:
-        Delay in seconds
-    """
+    """Return exponential backoff delay (seconds) with optional ±25% jitter."""
     delay = min(base_delay * (backoff_factor ** attempt), max_delay)
     
     if jitter:
@@ -47,24 +35,7 @@ def retry_with_backoff(
     exceptions: Tuple[Type[Exception], ...] = (Exception,),
     on_retry: Optional[Callable[[Exception, int], None]] = None
 ):
-    """
-    Decorator to retry a function with exponential backoff.
-    
-    Args:
-        max_attempts: Maximum number of attempts
-        base_delay: Initial delay between retries
-        backoff_factor: Multiplier for delay on each retry
-        exceptions: Tuple of exception types to catch and retry
-        on_retry: Optional callback function called on each retry
-        
-    Returns:
-        Decorated function
-        
-    Example:
-        @retry_with_backoff(max_attempts=3, exceptions=(ConnectionError,))
-        def fetch_data():
-            return api.get("/data")
-    """
+    """Decorator to retry a sync function with exponential backoff."""
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Any:
@@ -107,24 +78,7 @@ def retry_async_with_backoff(
     exceptions: Tuple[Type[Exception], ...] = (Exception,),
     on_retry: Optional[Callable[[Exception, int], None]] = None
 ):
-    """
-    Decorator to retry an async function with exponential backoff.
-    
-    Args:
-        max_attempts: Maximum number of attempts
-        base_delay: Initial delay between retries
-        backoff_factor: Multiplier for delay on each retry
-        exceptions: Tuple of exception types to catch and retry
-        on_retry: Optional callback function called on each retry
-        
-    Returns:
-        Decorated async function
-        
-    Example:
-        @retry_async_with_backoff(max_attempts=3)
-        async def fetch_data():
-            return await api.get("/data")
-    """
+    """Decorator to retry an async function with exponential backoff."""
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
@@ -186,15 +140,6 @@ class RetryContext:
         backoff_factor: float = RETRY_BACKOFF_FACTOR,
         exceptions: Tuple[Type[Exception], ...] = (Exception,)
     ):
-        """
-        Initialize retry context.
-        
-        Args:
-            max_attempts: Maximum number of attempts
-            base_delay: Initial delay between retries
-            backoff_factor: Multiplier for delay on each retry
-            exceptions: Tuple of exception types to retry on
-        """
         self.max_attempts = max_attempts
         self.base_delay = base_delay
         self.backoff_factor = backoff_factor
@@ -221,15 +166,7 @@ class RetryContext:
         self._success = True
     
     def should_retry(self, exception: Exception) -> bool:
-        """
-        Check if should retry after exception.
-        
-        Args:
-            exception: Exception that occurred
-            
-        Returns:
-            True if should retry
-        """
+        """Return True if the exception is retryable and attempts remain."""
         if self._success:
             return False
         
