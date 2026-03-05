@@ -82,29 +82,10 @@ class MetricsCollector:
     """Collect and calculate system metrics."""
     
     def __init__(self, db: Session):
-        """
-        Initialize metrics collector.
-        
-        Args:
-            db: Database session
-        """
         self.db = db
     
-    def get_billing_metrics(
-        self,
-        start_date: date,
-        end_date: date
-    ) -> BillingMetrics:
-        """
-        Get billing metrics for date range.
-        
-        Args:
-            start_date: Start date
-            end_date: End date
-            
-        Returns:
-            BillingMetrics
-        """
+    def get_billing_metrics(self, start_date: date, end_date: date) -> BillingMetrics:
+        """Return billing metrics for the given date range."""
         logger.info(f"Calculating billing metrics for {start_date} to {end_date}")
         
         # Get invoices in date range
@@ -177,21 +158,8 @@ class MetricsCollector:
             period_end=end_date,
         )
     
-    def get_container_metrics(
-        self,
-        start_date: date,
-        end_date: date
-    ) -> ContainerMetrics:
-        """
-        Get container tracking metrics for date range.
-        
-        Args:
-            start_date: Start date
-            end_date: End date
-            
-        Returns:
-            ContainerMetrics
-        """
+    def get_container_metrics(self, start_date: date, end_date: date) -> ContainerMetrics:
+        """Return container tracking metrics for the given date range."""
         logger.info(f"Calculating container metrics for {start_date} to {end_date}")
         
         # Get containers in date range
@@ -263,17 +231,7 @@ class MetricsCollector:
         start_date: Optional[date] = None,
         end_date: Optional[date] = None
     ) -> Optional[CustomerMetrics]:
-        """
-        Get metrics for specific customer.
-        
-        Args:
-            customer_id: Customer ID
-            start_date: Optional start date (defaults to 90 days ago)
-            end_date: Optional end date (defaults to today)
-            
-        Returns:
-            CustomerMetrics or None if customer not found
-        """
+        """Return metrics for a customer; defaults to last 90 days. None if not found."""
         customer = self.db.query(Customer).filter(
             Customer.id == customer_id
         ).first()
@@ -379,17 +337,7 @@ class MetricsCollector:
         end_date: date,
         limit: int = 10
     ) -> List[Dict[str, Any]]:
-        """
-        Get top customers by revenue in date range.
-        
-        Args:
-            start_date: Start date
-            end_date: End date
-            limit: Number of customers to return
-            
-        Returns:
-            List of customer revenue data
-        """
+        """Return top customers by revenue for the date range."""
         results = self.db.query(
             Customer.name,
             func.sum(Invoice.total_amount).label('total_revenue'),
@@ -417,12 +365,7 @@ class MetricsCollector:
         ]
     
     def get_system_health_metrics(self) -> Dict[str, Any]:
-        """
-        Get overall system health metrics.
-        
-        Returns:
-            System health metrics
-        """
+        """Return overall system health metrics including counts and recent activity."""
         logger.info("Calculating system health metrics")
         
         # Count active entities
@@ -469,14 +412,6 @@ class MetricsCollector:
 
 
 def get_metrics_collector(db: Session) -> MetricsCollector:
-    """
-    Get metrics collector instance.
-    
-    Args:
-        db: Database session
-        
-    Returns:
-        MetricsCollector instance
-    """
+    """Return a MetricsCollector instance."""
     return MetricsCollector(db)
 
