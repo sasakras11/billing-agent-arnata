@@ -385,19 +385,7 @@ class DisputeResponseEmailTemplate(EmailTemplate):
 
 
 def get_email_template(template_type: str, data: Dict[str, Any]) -> EmailTemplate:
-    """
-    Get email template by type.
-
-    Args:
-        template_type: Type of template (invoice, alert, dispute)
-        data: Template data dictionary
-
-    Returns:
-        EmailTemplate instance
-
-    Raises:
-        ValueError: If template type is unknown
-    """
+    """Return an EmailTemplate for the given type; raises ValueError if unknown."""
 
     templates = {
         "invoice": InvoiceEmailTemplate,
