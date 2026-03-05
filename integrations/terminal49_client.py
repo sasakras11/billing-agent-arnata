@@ -57,7 +57,6 @@ class Terminal49Client:
     API_BASE_URL = "https://api.terminal49.com/v2"
     
     def __init__(self):
-        """Initialize Terminal49 client."""
         self.api_key = settings.terminal49_api_key
         self.webhook_secret = settings.terminal49_webhook_secret
         self.timeout = 30.0
@@ -73,17 +72,7 @@ class Terminal49Client:
         shipping_line: Optional[str] = None,
         ref_numbers: Optional[List[str]] = None
     ) -> Optional[Terminal49Container]:
-        """
-        Start tracking a container.
-        
-        Args:
-            container_number: Container number to track
-            shipping_line: Optional shipping line code (MAEU, CMDU, etc.)
-            ref_numbers: Optional reference numbers (booking, BOL, etc.)
-            
-        Returns:
-            Terminal49Container object or None
-        """
+        """Start tracking a container; returns Terminal49Container or None."""
         try:
             payload = {
                 "container_number": container_number.upper().replace(" ", ""),
@@ -120,15 +109,7 @@ class Terminal49Client:
         self,
         tracking_id: str
     ) -> Optional[Terminal49Container]:
-        """
-        Get current status of tracked container.
-        
-        Args:
-            tracking_id: Terminal49 tracking ID
-            
-        Returns:
-            Terminal49Container object or None
-        """
+        """Get current status of a tracked container by tracking ID."""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(
@@ -155,16 +136,7 @@ class Terminal49Client:
         page: int = 1,
         per_page: int = 50
     ) -> List[Terminal49Container]:
-        """
-        List all tracked containers.
-        
-        Args:
-            page: Page number
-            per_page: Results per page
-            
-        Returns:
-            List of Terminal49Container objects
-        """
+        """List all tracked containers with pagination."""
         try:
             params = {
                 "page": page,
@@ -202,16 +174,7 @@ class Terminal49Client:
         webhook_url: str,
         events: Optional[List[str]] = None
     ) -> Dict[str, Any]:
-        """
-        Create a webhook subscription.
-        
-        Args:
-            webhook_url: URL to receive webhooks
-            events: List of events to subscribe to (default: all)
-            
-        Returns:
-            Webhook configuration
-        """
+        """Create a webhook subscription for container events."""
         try:
             if events is None:
                 events = [
@@ -246,21 +209,8 @@ class Terminal49Client:
             logger.error(f"Error creating webhook: {e}")
             raise
     
-    def verify_webhook_signature(
-        self,
-        payload: bytes,
-        signature: str
-    ) -> bool:
-        """
-        Verify webhook signature from Terminal49.
-        
-        Args:
-            payload: Raw webhook payload bytes
-            signature: Signature from X-Terminal49-Signature header
-            
-        Returns:
-            True if signature is valid
-        """
+    def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:
+        """Verify HMAC-SHA256 webhook signature from Terminal49."""
         try:
             expected_signature = hmac.new(
                 self.webhook_secret.encode(),
@@ -274,15 +224,7 @@ class Terminal49Client:
             return False
     
     def _parse_container(self, data: Dict[str, Any]) -> Terminal49Container:
-        """
-        Parse raw Terminal49 data into Terminal49Container model.
-        
-        Args:
-            data: Raw API response data
-            
-        Returns:
-            Terminal49Container object
-        """
+        """Parse raw Terminal49 API response into a Terminal49Container model."""
         # Extract container attributes
         attributes = data.get("attributes", {})
         
@@ -362,12 +304,7 @@ class Terminal49Client:
             return None
     
     async def test_connection(self) -> bool:
-        """
-        Test connection to Terminal49 API.
-        
-        Returns:
-            True if connection successful
-        """
+        """Return True if the Terminal49 API responds successfully."""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(
