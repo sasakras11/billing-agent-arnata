@@ -16,7 +16,6 @@ class BaseRepository(Generic[ModelType]):
     """Base repository providing common CRUD operations."""
 
     def __init__(self, model: Type[ModelType], db: Session):
-        """Initialize repository with model and session."""
         self.model = model
         self.db = db
 
