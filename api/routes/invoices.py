@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from models import get_db, Invoice
+from services import InvoiceGenerator
 
 router = APIRouter()
 
@@ -42,8 +43,6 @@ async def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
 @router.post("/invoices/{invoice_id}/send")
 async def send_invoice(invoice_id: int, db: Session = Depends(get_db)):
     """Send invoice to customer."""
-    from services import InvoiceGenerator
-    
     invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
