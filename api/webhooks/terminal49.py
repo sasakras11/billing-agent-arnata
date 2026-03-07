@@ -20,23 +20,16 @@ async def handle_terminal49_webhook(
 ):
     """Handle Terminal49 container update webhooks."""
     try:
-        # Get raw body for signature verification
         body = await request.body()
-        
-        # Verify signature
         terminal49 = Terminal49Client()
         if not terminal49.verify_webhook_signature(body, x_terminal49_signature or ""):
             logger.warning("Invalid webhook signature")
             raise HTTPException(status_code=401, detail="Invalid signature")
-        
-        # Parse payload
+
         payload = await request.json()
-        
-        # Extract event data
         event_type = payload.get("type")
         data = payload.get("data", {})
-        
-        # Find container by tracking ID
+
         tracking_id = data.get("id")
         container = (
             db.query(Container)
@@ -47,8 +40,7 @@ async def handle_terminal49_webhook(
         if not container:
             logger.warning(f"Container not found for tracking ID: {tracking_id}")
             return {"status": "ignored", "reason": "container not found"}
-        
-        # Create event record
+
         event = ContainerEvent(
             container_id=container.id,
             event_type=event_type,
@@ -58,8 +50,7 @@ async def handle_terminal49_webhook(
             raw_data=payload,
         )
         db.add(event)
-        
-        # Update container status
+
         attributes = data.get("attributes", {})
         container.current_status = attributes.get("status")
         container.location = attributes.get("location")
