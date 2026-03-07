@@ -1,8 +1,9 @@
 """Retry utilities for handling transient failures."""
-import time
+import asyncio
 import functools
-from typing import Callable, Type, Tuple, Any, Optional
 import random
+import time
+from typing import Callable, Type, Tuple, Any, Optional
 
 from logging_config import get_logger
 from constants import MAX_RETRY_ATTEMPTS, RETRY_BACKOFF_FACTOR, RETRY_INITIAL_DELAY
@@ -82,8 +83,6 @@ def retry_async_with_backoff(
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
-            import asyncio
-            
             last_exception = None
             
             for attempt in range(max_attempts):
