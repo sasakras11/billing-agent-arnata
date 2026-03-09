@@ -17,9 +17,8 @@ class ChargeCalculator:
     """Calculate billing charges for containers."""
     
     def __init__(self, db: Session):
-        """Initialize calculator with database session."""
         self.db = db
-        self._rate_cache = {}  # Cache for customer rates
+        self._rate_cache = {}
     
     def calculate_last_free_day(self, container: Container, customer: Customer) -> Optional[date]:
         """Calculate last free day before charges start."""
