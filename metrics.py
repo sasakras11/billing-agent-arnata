@@ -87,8 +87,6 @@ class MetricsCollector:
     def get_billing_metrics(self, start_date: date, end_date: date) -> BillingMetrics:
         """Return billing metrics for the given date range."""
         logger.info(f"Calculating billing metrics for {start_date} to {end_date}")
-        
-        # Get invoices in date range
         invoices = self.db.query(Invoice).filter(
             and_(
                 Invoice.invoice_date >= start_date,
@@ -96,7 +94,6 @@ class MetricsCollector:
             )
         ).all()
         
-        # Calculate totals
         total_revenue = sum(inv.total_amount for inv in invoices)
         total_invoices = len(invoices)
         
@@ -121,7 +118,6 @@ class MetricsCollector:
             total_revenue / total_invoices if total_invoices > 0 else 0.0
         )
         
-        # Get charge breakdown
         charges = self.db.query(Charge).join(Invoice).filter(
             and_(
                 Invoice.invoice_date >= start_date,
@@ -161,8 +157,6 @@ class MetricsCollector:
     def get_container_metrics(self, start_date: date, end_date: date) -> ContainerMetrics:
         """Return container tracking metrics for the given date range."""
         logger.info(f"Calculating container metrics for {start_date} to {end_date}")
-        
-        # Get containers in date range
         containers = self.db.query(Container).filter(
             and_(
                 Container.vessel_discharged >= datetime.combine(start_date, datetime.min.time()),
@@ -188,7 +182,6 @@ class MetricsCollector:
             )
         )
         
-        # Calculate average dwell time (discharge to return)
         dwell_times = []
         for c in containers:
             if c.vessel_discharged and c.returned_empty:
@@ -199,7 +192,6 @@ class MetricsCollector:
             sum(dwell_times) / len(dwell_times) if dwell_times else 0.0
         )
         
-        # Calculate on-time return rate
         on_time_returns = sum(
             1 for c in containers
             if c.returned_empty and c.per_diem_starts
@@ -250,7 +242,6 @@ class MetricsCollector:
             f"from {start_date} to {end_date}"
         )
         
-        # Get loads
         loads = self.db.query(Load).filter(
             and_(
                 Load.customer_id == customer_id,
@@ -261,7 +252,6 @@ class MetricsCollector:
         
         total_loads = len(loads)
         
-        # Get invoices
         invoices = self.db.query(Invoice).filter(
             and_(
                 Invoice.customer_id == customer_id,
@@ -283,7 +273,6 @@ class MetricsCollector:
             if inv.status != InvoiceStatus.PAID
         )
         
-        # Calculate average payment days
         payment_days = []
         for inv in invoices:
             if inv.status == InvoiceStatus.PAID and inv.paid_date and inv.invoice_date:
@@ -294,7 +283,6 @@ class MetricsCollector:
             sum(payment_days) / len(payment_days) if payment_days else 0.0
         )
         
-        # Calculate dispute rate
         disputed = sum(
             1 for inv in invoices if inv.status == InvoiceStatus.DISPUTED
         )
@@ -303,7 +291,6 @@ class MetricsCollector:
             (disputed / len(invoices) * 100) if invoices else 0.0
         )
         
-        # Calculate on-time payment rate
         on_time_payments = sum(
             1 for inv in invoices
             if inv.status == InvoiceStatus.PAID
@@ -367,8 +354,6 @@ class MetricsCollector:
     def get_system_health_metrics(self) -> Dict[str, Any]:
         """Return overall system health metrics including counts and recent activity."""
         logger.info("Calculating system health metrics")
-        
-        # Count active entities
         total_customers = self.db.query(Customer).filter(
             Customer.active == True
         ).count()
@@ -389,7 +374,6 @@ class MetricsCollector:
             ])
         ).count()
         
-        # Get recent activity (last 24 hours)
         yesterday = datetime.now() - timedelta(days=1)
         
         recent_invoices = self.db.query(Invoice).filter(
