@@ -55,14 +55,10 @@ class QuickBooksClient:
         self.environment = settings.quickbooks_environment
         self.timeout = 30.0
         
-        # Use sandbox or production URL
         if self.environment == "sandbox":
             self.base_url = f"{self.SANDBOX_BASE_URL}/company/{self.realm_id}"
         else:
             self.base_url = f"{self.PRODUCTION_BASE_URL}/company/{self.realm_id}"
-        
-        # Access token should be obtained via OAuth2 flow
-        # For production, implement proper OAuth2 with token refresh
         self._access_token: Optional[str] = None
     
     def set_access_token(self, access_token: str):
@@ -174,7 +170,6 @@ class QuickBooksClient:
             if invoice_date is None:
                 invoice_date = date.today()
             
-            # Build line items
             lines = []
             for idx, item in enumerate(line_items, 1):
                 line = {
@@ -186,8 +181,6 @@ class QuickBooksClient:
                         "UnitPrice": item.unit_price or (item.amount / item.quantity),
                     }
                 }
-                
-                # Add item reference if provided
                 if item.item_ref:
                     line["SalesItemLineDetail"]["ItemRef"] = {"value": item.item_ref}
                 
@@ -310,7 +303,6 @@ class QuickBooksClient:
     ) -> List[QBInvoice]:
         """Query QuickBooks invoices with optional customer/status filters."""
         try:
-            # Build query
             conditions = []
             if customer_id:
                 conditions.append(f"CustomerRef = '{customer_id}'")
