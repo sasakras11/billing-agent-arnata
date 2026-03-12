@@ -34,19 +34,12 @@ class InvoiceGenerator:
                 logger.error(f"Load {load.id} has no customer")
                 return None
             
-            # Calculate totals
             subtotal = sum(charge.amount for charge in charges if charge.is_billable)
-            tax_amount = 0.0  # Add tax calculation if needed
+            tax_amount = 0.0
             total_amount = subtotal + tax_amount
-            
-            # Generate invoice number
             invoice_date = date.today()
             invoice_number = self._generate_invoice_number(customer, invoice_date)
-            
-            # Calculate due date based on payment terms
             due_date = self._calculate_due_date(customer.payment_terms, invoice_date)
-            
-            # Create invoice record
             invoice = Invoice(
                 invoice_number=invoice_number,
                 customer_id=customer.id,
@@ -64,9 +57,7 @@ class InvoiceGenerator:
             )
             
             self.db.add(invoice)
-            self.db.flush()  # Get invoice.id
-            
-            # Create line items
+            self.db.flush()
             line_items = []
             for idx, charge in enumerate(charges, 1):
                 if not charge.is_billable:
@@ -81,13 +72,9 @@ class InvoiceGenerator:
                     amount=charge.amount,
                 )
                 line_items.append(line_item)
-                
-                # Link charge to invoice
                 charge.invoice_id = invoice.id
-            
+
             self.db.add_all(line_items)
-            
-            # Update invoice relationship
             invoice.line_items = line_items
             invoice.charges = charges
             
