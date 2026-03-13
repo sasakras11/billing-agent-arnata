@@ -31,7 +31,6 @@ class ComponentHealth:
         details: Optional[Dict[str, Any]] = None,
         latency_ms: Optional[float] = None
     ):
-        """Initialize component health."""
         self.status = status
         self.message = message
         self.details = details or {}
@@ -59,7 +58,6 @@ class HealthCheckService:
     """Service for checking system health."""
     
     def __init__(self, db: Optional[Session] = None):
-        """Initialize health check service."""
         self.db = db
 
     def check_database(self) -> ComponentHealth:
@@ -73,7 +71,6 @@ class HealthCheckService:
         try:
             start_time = datetime.now()
             
-            # Simple query to check connection
             result = self.db.execute(text("SELECT 1")).scalar()
             
             latency_ms = (datetime.now() - start_time).total_seconds() * 1000
@@ -102,10 +99,7 @@ class HealthCheckService:
         try:
             start_time = datetime.now()
             
-            # Connect to Redis
             redis_client = Redis.from_url(settings.redis_url)
-            
-            # Ping Redis
             result = redis_client.ping()
             
             latency_ms = (datetime.now() - start_time).total_seconds() * 1000
@@ -132,8 +126,6 @@ class HealthCheckService:
     def check_mcleod_api(self) -> ComponentHealth:
         """Check McLeod API connectivity."""
         try:
-            # This is a placeholder - actual implementation would
-            # make a lightweight API call to McLeod
             return ComponentHealth(
                 status=HealthStatus.HEALTHY,
                 message="McLeod API configured",
@@ -153,8 +145,6 @@ class HealthCheckService:
     def check_terminal49_api(self) -> ComponentHealth:
         """Check Terminal49 API connectivity."""
         try:
-            # This is a placeholder - actual implementation would
-            # make a lightweight API call to Terminal49
             return ComponentHealth(
                 status=HealthStatus.HEALTHY,
                 message="Terminal49 API configured"
@@ -170,8 +160,6 @@ class HealthCheckService:
     def check_quickbooks_api(self) -> ComponentHealth:
         """Check QuickBooks API connectivity."""
         try:
-            # This is a placeholder - actual implementation would
-            # verify QuickBooks OAuth token validity
             return ComponentHealth(
                 status=HealthStatus.HEALTHY,
                 message="QuickBooks API configured",
@@ -191,8 +179,6 @@ class HealthCheckService:
     def check_all(self) -> Dict[str, Any]:
         """Run all health checks."""
         logger.info("Running health checks")
-        
-        # Check all components
         checks = {
             "database": self.check_database(),
             "redis": self.check_redis(),
@@ -201,7 +187,6 @@ class HealthCheckService:
             "quickbooks_api": self.check_quickbooks_api(),
         }
         
-        # Determine overall status
         statuses = [check.status for check in checks.values()]
         
         if all(s == HealthStatus.HEALTHY for s in statuses):
@@ -211,7 +196,6 @@ class HealthCheckService:
         else:
             overall_status = HealthStatus.DEGRADED
         
-        # Build response
         result = {
             "status": overall_status.value,
             "timestamp": datetime.utcnow().isoformat(),
@@ -233,14 +217,10 @@ class HealthCheckService:
     def check_readiness(self) -> Dict[str, Any]:
         """Check if critical dependencies (database, redis) are healthy."""
         logger.info("Running readiness checks")
-        
-        # Check critical components
         checks = {
             "database": self.check_database(),
             "redis": self.check_redis(),
         }
-        
-        # Must all be healthy for app to be ready
         is_ready = all(
             check.status == HealthStatus.HEALTHY
             for check in checks.values()
