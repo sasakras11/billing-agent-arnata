@@ -70,7 +70,6 @@ class HealthCheckService:
         
         try:
             start_time = datetime.now()
-            
             result = self.db.execute(text("SELECT 1")).scalar()
             
             latency_ms = (datetime.now() - start_time).total_seconds() * 1000
@@ -98,7 +97,6 @@ class HealthCheckService:
         """Check Redis connectivity and health."""
         try:
             start_time = datetime.now()
-            
             redis_client = Redis.from_url(settings.redis_url)
             result = redis_client.ping()
             
