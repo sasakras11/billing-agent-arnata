@@ -11,20 +11,17 @@ def setup_logging() -> None:
     """Configure structlog: JSON in production, colored console in development."""
     settings = get_settings()
     
-    # Configure standard logging
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=getattr(logging, settings.log_level.upper()),
     )
     
-    # Set third-party log levels
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     
-    # Configure structlog processors
     shared_processors = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_log_level,
@@ -35,13 +32,11 @@ def setup_logging() -> None:
     ]
     
     if settings.is_production:
-        # JSON output for production
         processors = shared_processors + [
             structlog.processors.dict_tracebacks,
             structlog.processors.JSONRenderer(),
         ]
     else:
-        # Colored console output for development
         processors = shared_processors + [
             structlog.dev.ConsoleRenderer(colors=True),
         ]
@@ -121,7 +116,6 @@ class LoggerAdapter:
         self.logger.error(msg, *args, **kwargs)
 
 
-# Convenience function to get adapted logger
 def get_adapted_logger(name: str) -> LoggerAdapter:
     """Return a LoggerAdapter that wraps structlog with a standard logging interface."""
     return LoggerAdapter(name)
