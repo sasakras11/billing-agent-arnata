@@ -225,10 +225,7 @@ class Terminal49Client:
     
     def _parse_container(self, data: Dict[str, Any]) -> Terminal49Container:
         """Parse raw Terminal49 API response into a Terminal49Container model."""
-        # Extract container attributes
         attributes = data.get("attributes", {})
-        
-        # Parse milestones
         milestones = []
         for event in attributes.get("milestones", []):
             try:
@@ -248,7 +245,6 @@ class Terminal49Client:
                 logger.warning(f"Error parsing milestone: {e}")
                 continue
         
-        # Parse key dates
         vessel_departed_pol = self._parse_date(
             attributes.get("pod_vessel_departed_at")
         )
