@@ -22,7 +22,6 @@ def exponential_backoff(
     delay = min(base_delay * (backoff_factor ** attempt), max_delay)
     
     if jitter:
-        # Add random jitter (±25%)
         jitter_amount = delay * 0.25
         delay = delay + random.uniform(-jitter_amount, jitter_amount)
     
@@ -64,10 +63,8 @@ def retry_with_backoff(
                     
                     time.sleep(delay)
             
-            # Should never reach here, but just in case
             if last_exception:
                 raise last_exception
-                
         return wrapper
     return decorator
 
@@ -107,10 +104,8 @@ def retry_async_with_backoff(
                     
                     await asyncio.sleep(delay)
             
-            # Should never reach here, but just in case
             if last_exception:
                 raise last_exception
-                
         return wrapper
     return decorator
 
@@ -175,7 +170,6 @@ class RetryContext:
         if not isinstance(exception, self.exceptions):
             return False
         
-        # Calculate and wait for backoff delay
         if self.current_attempt > 0:
             delay = exponential_backoff(
                 self.current_attempt - 1,
