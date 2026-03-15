@@ -85,7 +85,6 @@ class InvoiceGenerator:
                 f"total: ${total_amount:.2f}"
             )
             
-            # Auto-send if requested
             if auto_send and customer.auto_invoice:
                 self.send_to_customer(invoice)
             
@@ -101,12 +100,10 @@ class InvoiceGenerator:
         try:
             customer = invoice.customer
             
-            # Ensure customer exists in QuickBooks
             if not customer.quickbooks_customer_id:
                 logger.warning(f"Customer {customer.id} not in QuickBooks, skipping sync")
                 return False
             
-            # Build line items for QuickBooks
             qb_line_items = []
             for line_item in invoice.line_items:
                 qb_line_items.append(
@@ -118,7 +115,6 @@ class InvoiceGenerator:
                     )
                 )
             
-            # Create invoice in QuickBooks
             qb_invoice = self.qb_client.create_invoice(
                 customer_id=customer.quickbooks_customer_id,
                 line_items=qb_line_items,
@@ -129,7 +125,6 @@ class InvoiceGenerator:
             )
             
             if qb_invoice:
-                # Update invoice with QuickBooks data
                 invoice.quickbooks_invoice_id = qb_invoice.id
                 invoice.quickbooks_sync_token = qb_invoice.sync_token
                 invoice.status = InvoiceStatus.APPROVED
@@ -148,12 +143,10 @@ class InvoiceGenerator:
         """Send invoice to customer via QuickBooks; returns True on success."""
         try:
             if not invoice.quickbooks_invoice_id:
-                # Sync to QuickBooks first
                 if not self.sync_to_quickbooks(invoice):
                     logger.error("Failed to sync invoice before sending")
                     return False
             
-            # Send via QuickBooks
             customer = invoice.customer
             success = self.qb_client.send_invoice(
                 invoice_id=invoice.quickbooks_invoice_id,
@@ -180,25 +173,19 @@ class InvoiceGenerator:
             if not invoice.quickbooks_invoice_id:
                 return False
             
-            # Get latest invoice data from QuickBooks
             qb_invoice = self.qb_client.get_invoice(invoice.quickbooks_invoice_id)
-            
             if not qb_invoice:
                 return False
-            
-            # Update invoice status
             old_balance = invoice.balance_due
             invoice.balance_due = qb_invoice.balance
             invoice.amount_paid = qb_invoice.total_amount - qb_invoice.balance
             
-            # Update status based on balance
             if qb_invoice.balance == 0:
                 invoice.status = InvoiceStatus.PAID
                 invoice.paid_date = date.today()
             elif qb_invoice.balance < qb_invoice.total_amount:
                 invoice.status = InvoiceStatus.PARTIALLY_PAID
                 
-                # Check for short payment (dispute)
                 if qb_invoice.balance > 0 and old_balance > qb_invoice.balance:
                     self._handle_short_payment(invoice, old_balance, qb_invoice.balance)
             elif invoice.due_date and date.today() > invoice.due_date:
