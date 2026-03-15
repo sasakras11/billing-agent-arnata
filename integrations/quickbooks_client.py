@@ -39,7 +39,7 @@ class QBLineItem(BaseModel):
     amount: float
     quantity: float = 1.0
     unit_price: Optional[float] = None
-    item_ref: Optional[str] = None  # Reference to QuickBooks item/service
+    item_ref: Optional[str] = None
 
 
 class QuickBooksClient:
