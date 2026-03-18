@@ -12,29 +12,23 @@ def validate_container_number(container_number: str) -> str:
     if not container_number:
         raise ValidationError("Container number cannot be empty")
     
-    # Normalize: uppercase and remove spaces
     normalized = container_number.upper().replace(" ", "").replace("-", "")
-    
-    # Check length
+
     if len(normalized) != MIN_CONTAINER_NUMBER_LENGTH:
         raise ValidationError(
             f"Container number must be {MIN_CONTAINER_NUMBER_LENGTH} characters, "
             f"got {len(normalized)}: {container_number}"
         )
     
-    # Check format: 4 letters + 7 digits
     pattern = r'^[A-Z]{4}\d{7}$'
     if not re.match(pattern, normalized):
         raise ValidationError(
             f"Container number must match format AAAA1234567: {container_number}"
         )
     
-    # Validate check digit (ISO 6346 algorithm)
     owner_code = normalized[:4]
     serial = normalized[4:10]
     check_digit = int(normalized[10])
-    
-    # Calculate expected check digit
     calculated = _calculate_container_check_digit(owner_code + serial)
     
     if calculated != check_digit:
@@ -62,7 +56,6 @@ def _calculate_container_check_digit(container_base: str) -> int:
         else:
             value = int(char)
         
-        # Multiply by position weight (2^i)
         total += value * (2 ** i)
     check_digit = (total % 11) % 10
     
@@ -74,10 +67,7 @@ def validate_email(email: str) -> str:
     if not email:
         raise ValidationError("Email cannot be empty")
     
-    # Normalize
     normalized = email.lower().strip()
-    
-    # Basic email pattern
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     
     if not re.match(pattern, normalized):
@@ -91,12 +81,8 @@ def validate_phone_number(phone: str) -> str:
     if not phone:
         raise ValidationError("Phone number cannot be empty")
     
-    # Extract digits only
     digits = re.sub(r'\D', '', phone)
-    
-    # Check length (10 digits for US)
     if len(digits) == 11 and digits[0] == '1':
-        # Strip leading 1
         digits = digits[1:]
     
     if len(digits) != 10:
