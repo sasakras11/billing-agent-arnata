@@ -32,7 +32,6 @@ class TrackingAgent(BaseAgent):
     ) -> Optional[Container]:
         """Start tracking a container via Terminal49 and persist it."""
         try:
-            # Check if already tracking
             existing = (
                 self.db.query(Container)
                 .filter(Container.container_number == container_number)
@@ -43,7 +42,6 @@ class TrackingAgent(BaseAgent):
                 logger.info(f"Already tracking container {container_number}")
                 return existing
             
-            # Start tracking via Terminal49
             t49_container = await self.terminal49.track_container(
                 container_number=container_number,
                 ref_numbers=[load.bill_of_lading] if load.bill_of_lading else None
@@ -53,7 +51,6 @@ class TrackingAgent(BaseAgent):
                 logger.error(f"Failed to track container {container_number}")
                 return None
             
-            # Create container record
             container = Container(
                 container_number=container_number,
                 load_id=load.id,
@@ -80,7 +77,6 @@ class TrackingAgent(BaseAgent):
             
             self.db.add(container)
             
-            # Calculate last free day
             customer = load.customer
             last_free_day = self.charge_calculator.calculate_last_free_day(
                 container, customer
@@ -91,7 +87,6 @@ class TrackingAgent(BaseAgent):
             
             self.db.commit()
             
-            # Create milestone events
             if t49_container.milestones:
                 for milestone in t49_container.milestones:
                     event = ContainerEvent(
@@ -110,7 +105,6 @@ class TrackingAgent(BaseAgent):
             
             logger.info(f"Started tracking container {container_number}")
             
-            # Send initial alert if container is available
             if container.available_for_pickup:
                 self.alert_service.create_container_available_alert(
                     container, customer
@@ -133,7 +127,6 @@ class TrackingAgent(BaseAgent):
                 logger.warning(f"Container {container.id} has no tracking ID")
                 return False
             
-            # Get latest status from Terminal49
             t49_container = await self.terminal49.get_container_status(
                 container.terminal49_tracking_id
             )
@@ -142,7 +135,6 @@ class TrackingAgent(BaseAgent):
                 logger.error(f"Failed to get status for container {container.id}")
                 return False
             
-            # Update container fields
             container.current_status = t49_container.current_status
             container.location = t49_container.location
             container.vessel_departed_pol = t49_container.vessel_departed_pol
@@ -176,7 +168,6 @@ class TrackingAgent(BaseAgent):
             
             customer = container.load.customer
             
-            # Check per diem alert
             if self.charge_calculator.should_alert_per_diem(
                 container, customer, hours_threshold=24
             ):
@@ -185,7 +176,6 @@ class TrackingAgent(BaseAgent):
                 )
                 alerts.append("Per diem alert created")
             
-            # Check if charges are accruing
             if container.picked_up and not container.returned_empty:
                 per_diem_days, per_diem_amount = self.charge_calculator.calculate_per_diem(
                     container, customer
