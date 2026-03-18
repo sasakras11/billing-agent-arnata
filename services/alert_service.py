@@ -21,14 +21,12 @@ class AlertService:
     def __init__(self, db: Session):
         self.db = db
         
-        # Initialize email client
         if settings.sendgrid_api_key:
             self.sendgrid_client = SendGridAPIClient(settings.sendgrid_api_key)
         else:
             self.sendgrid_client = None
             logger.warning("SendGrid API key not configured")
         
-        # Initialize SMS client
         if settings.twilio_account_sid and settings.twilio_auth_token:
             self.twilio_client = TwilioClient(
                 settings.twilio_account_sid,
@@ -160,7 +158,6 @@ class AlertService:
     def send_pending_alerts(self, limit: int = 50) -> int:
         """Send all pending alerts, return count sent."""
         try:
-            # Get pending alerts
             now = datetime.utcnow()
             alerts = (
                 self.db.query(Alert)
@@ -190,7 +187,6 @@ class AlertService:
         try:
             success = False
             
-            # Send email
             if alert.send_email and alert.recipient_email:
                 if self._send_email(
                     to_email=alert.recipient_email,
@@ -200,7 +196,6 @@ class AlertService:
                     alert.email_sent = True
                     success = True
             
-            # Send SMS
             if alert.send_sms and alert.recipient_phone:
                 if self._send_sms(
                     to_phone=alert.recipient_phone,
@@ -209,7 +204,6 @@ class AlertService:
                     alert.sms_sent = True
                     success = True
             
-            # Update alert status
             if success:
                 alert.status = AlertStatus.SENT
                 alert.sent_at = datetime.utcnow()
