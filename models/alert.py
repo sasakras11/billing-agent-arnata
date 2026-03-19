@@ -37,57 +37,33 @@ class Alert(Base):
     __tablename__ = "alerts"
     
     id = Column(Integer, primary_key=True, index=True)
-    
-    # Alert Details
     alert_type = Column(SQLEnum(AlertType), nullable=False, index=True)
-    priority = Column(String(20), default="medium")  # low, medium, high, urgent
-    
-    # Recipients
+    priority = Column(String(20), default="medium")
     customer_id = Column(Integer, ForeignKey("customers.id"))
     recipient_email = Column(String(255))
     recipient_phone = Column(String(50))
-    
-    # References
     container_id = Column(Integer, ForeignKey("containers.id"))
     load_id = Column(Integer, ForeignKey("loads.id"))
     invoice_id = Column(Integer, ForeignKey("invoices.id"))
-    
-    # Message
     subject = Column(String(500), nullable=False)
     message = Column(Text, nullable=False)
-    
-    # Delivery
     send_email = Column(Boolean, default=True)
     send_sms = Column(Boolean, default=False)
     send_webhook = Column(Boolean, default=False)
     webhook_url = Column(String(500))
-    
-    # Status
     status = Column(SQLEnum(AlertStatus), default=AlertStatus.PENDING, index=True)
-    
-    # Scheduling
-    scheduled_for = Column(DateTime)  # When to send (if scheduled)
+    scheduled_for = Column(DateTime)
     sent_at = Column(DateTime)
     acknowledged_at = Column(DateTime)
-    
-    # Delivery Tracking
     email_sent = Column(Boolean, default=False)
     sms_sent = Column(Boolean, default=False)
     webhook_sent = Column(Boolean, default=False)
-    
-    # Retry Logic
     retry_count = Column(Integer, default=0)
     max_retries = Column(Integer, default=3)
     last_error = Column(Text)
-    
-    # Metadata
-    metadata = Column(JSON)  # Additional data for the alert
-    
-    # Timestamps
+    metadata = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
     customer = relationship("Customer")
     container = relationship("Container", back_populates="alerts")
     load = relationship("Load")
