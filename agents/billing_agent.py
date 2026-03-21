@@ -40,10 +40,7 @@ class BillingAgent:
         logger.info(f"Processing billing for load {load.id}")
         
         try:
-            # Calculate all charges
             charges = self._calculate_charges(load)
-            
-            # Save charges to database
             if charges:
                 self._save_charges(charges)
                 logger.info(
@@ -53,17 +50,13 @@ class BillingAgent:
             else:
                 logger.warning(f"No charges calculated for load {load.id}")
             
-            # Check if customer wants auto-invoicing
             if not load.customer.auto_invoice:
                 logger.info(
                     f"Auto-invoicing disabled for customer {load.customer.name}"
                 )
                 return None
             
-            # Generate invoice
             invoice = self._generate_invoice(load, charges, auto_send)
-            
-            # Sync to QuickBooks if configured
             if invoice and load.customer.quickbooks_customer_id:
                 self._sync_to_quickbooks(invoice)
             
@@ -76,8 +69,7 @@ class BillingAgent:
             
             return invoice
             
-        except (ChargeCalculationError, InvoiceGenerationError) as e:
-            # Expected errors - already logged, just re-raise
+        except (ChargeCalculationError, InvoiceGenerationError):
             raise
         except SQLAlchemyError as e:
             self.db.rollback()
@@ -130,7 +122,6 @@ class BillingAgent:
         try:
             charges = self._calculate_charges(load)
             
-            # Organize charges by type
             charges_by_type = {}
             total_amount = Decimal('0.00')
             
