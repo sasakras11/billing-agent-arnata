@@ -177,7 +177,6 @@ class McLeodClient:
 
     def _parse_load(self, data: Dict[str, Any]) -> McLeodLoad:
         """Parse raw McLeod API response into a McLeodLoad model."""
-        # Parse dates
         pickup_date = None
         if data.get("pickup_date"):
             try:
