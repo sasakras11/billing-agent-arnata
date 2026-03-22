@@ -40,7 +40,6 @@ class BaseRepository(Generic[ModelType]):
         try:
             query = self.db.query(self.model)
             
-            # Apply ordering
             if order_by:
                 order_field = getattr(self.model, order_by, None)
                 if order_field is not None:
