@@ -21,10 +21,7 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """Application lifespan events."""
-    # Startup
     logger.info("Starting AI Billing Agent API")
-    
-    # Initialize database
     try:
         init_db()
         logger.info("Database initialized")
@@ -33,7 +30,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     
     yield
     
-    # Shutdown
     logger.info("Shutting down AI Billing Agent API")
 
 
