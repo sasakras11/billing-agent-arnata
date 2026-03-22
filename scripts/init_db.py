@@ -14,7 +14,6 @@ def create_sample_customer():
     """Create a sample customer."""
     db = SessionLocal()
     try:
-        # Check if customer exists
         existing = db.query(Customer).filter(Customer.name == "Sample Customer").first()
         if existing:
             print("Sample customer already exists")
