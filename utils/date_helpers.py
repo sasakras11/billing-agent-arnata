@@ -34,7 +34,6 @@ def format_date_display(
 
     if include_time:
         if isinstance(dt, date) and not isinstance(dt, datetime):
-            # Convert date to datetime at midnight
             dt = datetime.combine(dt, datetime.min.time())
         return dt.strftime(DATETIME_FORMAT_DISPLAY)
     else:
@@ -54,7 +53,6 @@ def convert_to_timezone(
 ) -> datetime:
     """Convert datetime to specified timezone (assumes UTC if naive)."""
     if dt.tzinfo is None:
-        # Assume UTC if naive
         dt = pytz.UTC.localize(dt)
 
     target_tz = pytz.timezone(timezone_str)
@@ -70,7 +68,6 @@ def hours_until(target_datetime: datetime) -> float:
     """Return hours until target datetime (negative if in the past)."""
     now = get_current_utc()
 
-    # Ensure target is timezone-aware
     if target_datetime.tzinfo is None:
         target_datetime = pytz.UTC.localize(target_datetime)
 
@@ -83,7 +80,6 @@ def is_past_due(due_date: date, grace_hours: int = 0) -> bool:
     now = get_current_utc().date()
 
     if grace_hours > 0:
-        # Add grace period
         due_datetime = datetime.combine(due_date, datetime.max.time())
         due_datetime = pytz.UTC.localize(due_datetime)
         due_datetime += timedelta(hours=grace_hours)
