@@ -52,7 +52,6 @@ def create_sample_customer():
 
 
 def main():
-    """Initialize database."""
     print("🗄️  Initializing database...")
     
     try:
