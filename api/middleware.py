@@ -133,5 +133,4 @@ def setup_middleware(app) -> None:
     """Register all middleware on the FastAPI app."""
     app.add_middleware(ErrorHandlingMiddleware)
     app.add_middleware(RequestLoggingMiddleware)
-    # app.add_middleware(CORSHeadersMiddleware, allowed_origins=["*"])
     logger.info("Middleware configured")
