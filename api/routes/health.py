@@ -19,7 +19,6 @@ async def health_check(db: Session = Depends(get_db)):
 @router.get("/metrics")
 async def metrics():
     """Basic metrics endpoint."""
-    # TODO: Wire to metrics.MetricsCollector when needed
     return {
         "uptime": "N/A",
         "requests_total": "N/A",
