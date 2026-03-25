@@ -75,7 +75,6 @@ class InvoiceEmailTemplate(EmailTemplate):
             ]
         )
 
-        # Filter out any empty lines created by missing optional fields
         return "\n".join(line for line in lines if line != "")
 
     def render_body_html(self) -> str:
