@@ -111,21 +111,7 @@ def retry_async_with_backoff(
 
 
 class RetryContext:
-    """
-    Context manager for retry logic with custom handling.
-    
-    Example:
-        retry_ctx = RetryContext(max_attempts=3)
-        
-        for attempt in retry_ctx:
-            try:
-                result = api_call()
-                retry_ctx.success()
-                break
-            except ConnectionError as e:
-                if not retry_ctx.should_retry(e):
-                    raise
-    """
+    """Context manager for retry logic with custom handling."""
     
     def __init__(
         self,
