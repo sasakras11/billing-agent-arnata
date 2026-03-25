@@ -59,7 +59,6 @@ def test_calculate_per_diem(db_session, sample_container, sample_customer):
         as_of_date=date.today()
     )
     
-    # Should have some per diem charges
     assert days >= 0
     assert amount >= 0
     assert amount == days * sample_customer.per_diem_rate
@@ -104,10 +103,7 @@ def test_calculate_all_charges(db_session, sample_customer):
     calculator = ChargeCalculator(db_session)
     charges = calculator.calculate_all_charges(load)
     
-    # Should have at least base freight
     assert len(charges) >= 1
-    
-    # Check base freight exists
     freight_charges = [c for c in charges if c.charge_type.value == "base_freight"]
     assert len(freight_charges) == 1
     assert freight_charges[0].amount == 750.0
