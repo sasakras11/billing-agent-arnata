@@ -9,24 +9,19 @@ from alembic import context
 from config import get_settings
 from models.database import Base
 
-# Import all models to ensure they're registered
 from models import (
     Customer, Load, Container, ContainerEvent,
     Charge, Invoice, InvoiceLineItem, Alert
 )
 
-# this is the Alembic Config object
 config = context.config
 
-# Get database URL from settings
 settings = get_settings()
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
-# Interpret the config file for Python logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Model metadata
 target_metadata = Base.metadata
 
 
