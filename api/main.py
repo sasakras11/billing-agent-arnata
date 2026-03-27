@@ -33,7 +33,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     logger.info("Shutting down AI Billing Agent API")
 
 
-# Create FastAPI app
 app = FastAPI(
     title="AI Billing Agent",
     description="AI-powered billing automation for intermodal trucking",
@@ -41,7 +40,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"] if settings.is_development else [],
@@ -51,7 +49,6 @@ app.add_middleware(
 )
 
 
-# Exception handlers
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """Handle HTTP exceptions."""
@@ -71,7 +68,6 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Include routers
 app.include_router(health.router, tags=["Health"])
 app.include_router(loads.router, prefix="/api", tags=["Loads"])
 app.include_router(containers.router, prefix="/api", tags=["Containers"])
