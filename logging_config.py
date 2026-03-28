@@ -89,29 +89,23 @@ class LoggerAdapter:
         self.logger = get_logger(name)
     
     def debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log debug message."""
         self.logger.debug(msg, *args, **kwargs)
-    
+
     def info(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log info message."""
         self.logger.info(msg, *args, **kwargs)
-    
+
     def warning(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log warning message."""
         self.logger.warning(msg, *args, **kwargs)
-    
+
     def error(self, msg: str, *args: Any, exc_info: bool = False, **kwargs: Any) -> None:
-        """Log error message."""
         if exc_info:
             kwargs['exc_info'] = True
         self.logger.error(msg, *args, **kwargs)
-    
+
     def critical(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log critical message."""
         self.logger.critical(msg, *args, **kwargs)
-    
+
     def exception(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log exception with traceback."""
         kwargs['exc_info'] = True
         self.logger.error(msg, *args, **kwargs)
 
