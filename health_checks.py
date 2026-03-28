@@ -37,7 +37,6 @@ class ComponentHealth:
         self.latency_ms = latency_ms
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
         result = {
             "status": self.status.value,
         }
