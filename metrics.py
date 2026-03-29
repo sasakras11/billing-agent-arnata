@@ -38,7 +38,6 @@ class BillingMetrics:
     period_end: date
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
         return asdict(self)
 
 
@@ -56,7 +55,6 @@ class ContainerMetrics:
     period_end: date
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
         return asdict(self)
 
 
@@ -74,7 +72,6 @@ class CustomerMetrics:
     on_time_payment_rate: float
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
         return asdict(self)
 
 
