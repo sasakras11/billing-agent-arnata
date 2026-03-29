@@ -22,8 +22,6 @@ logger = get_logger(__name__)
 
 @dataclass
 class BillingMetrics:
-    """Container for billing metrics."""
-    
     total_revenue: float
     total_invoices: int
     paid_invoices: int
@@ -43,8 +41,6 @@ class BillingMetrics:
 
 @dataclass
 class ContainerMetrics:
-    """Container for container tracking metrics."""
-    
     total_containers: int
     active_containers: int
     returned_containers: int
@@ -60,8 +56,6 @@ class ContainerMetrics:
 
 @dataclass
 class CustomerMetrics:
-    """Container for customer-specific metrics."""
-    
     customer_name: str
     total_loads: int
     total_invoiced: float
