@@ -270,7 +270,6 @@ class AlertService:
             return False
     
     def _format_per_diem_message(self, container: Container, hours_until: int) -> str:
-        """Format per diem alert message."""
         return f"""
         <h2>Per Diem Charges Starting Soon</h2>
         <p>Container <strong>{container.container_number}</strong> will start accruing per diem charges in <strong>{hours_until} hours</strong>.</p>
@@ -280,7 +279,6 @@ class AlertService:
         """
     
     def _format_available_message(self, container: Container) -> str:
-        """Format container available message."""
         return f"""
         <h2>Container Available for Pickup</h2>
         <p>Container <strong>{container.container_number}</strong> is now available for pickup.</p>
@@ -290,7 +288,6 @@ class AlertService:
         """
     
     def _format_accruing_message(self, container: Container, charge_type: str, daily_rate: float) -> str:
-        """Format charge accruing message."""
         return f"""
         <h2>⚠️ Charges Currently Accruing</h2>
         <p>Container <strong>{container.container_number}</strong> is currently accruing <strong>{charge_type}</strong> charges.</p>
@@ -300,7 +297,6 @@ class AlertService:
         """
     
     def _format_invoice_message(self, invoice: Invoice) -> str:
-        """Format invoice created message."""
         return f"""
         <h2>New Invoice Created</h2>
         <p>Invoice <strong>{invoice.invoice_number}</strong> has been created.</p>
