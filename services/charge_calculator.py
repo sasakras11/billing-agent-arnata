@@ -14,8 +14,6 @@ settings = get_settings()
 
 
 class ChargeCalculator:
-    """Calculate billing charges for containers."""
-    
     def __init__(self, db: Session):
         self.db = db
         self._rate_cache = {}

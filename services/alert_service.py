@@ -16,8 +16,6 @@ settings = get_settings()
 
 
 class AlertService:
-    """Manage alerts and notifications."""
-    
     def __init__(self, db: Session):
         self.db = db
         
