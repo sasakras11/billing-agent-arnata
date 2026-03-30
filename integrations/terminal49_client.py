@@ -17,7 +17,6 @@ settings = get_settings()
 
 
 class ContainerMilestone(BaseModel):
-    """Container milestone event."""
     event_type: str
     event_time: datetime
     location: Optional[str] = None
@@ -28,7 +27,6 @@ class ContainerMilestone(BaseModel):
 
 
 class Terminal49Container(BaseModel):
-    """Container tracking data from Terminal49."""
     tracking_id: str
     container_number: str
     shipping_line: Optional[str] = None
@@ -52,8 +50,6 @@ class Terminal49Container(BaseModel):
 
 
 class Terminal49Client:
-    """Client for Terminal49 Container Tracking API."""
-    
     API_BASE_URL = "https://api.terminal49.com/v2"
     
     def __init__(self):
