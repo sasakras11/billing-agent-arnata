@@ -15,8 +15,6 @@ settings = get_settings()
 
 
 class McLeodLoad(BaseModel):
-    """McLeod load data model."""
-
     order_id: str
     load_number: str
     customer_id: str
@@ -41,8 +39,6 @@ class McLeodLoad(BaseModel):
 
 
 class McLeodClient:
-    """Client for McLeod LoadMaster REST API."""
-
     def __init__(self):
         self.base_url = settings.mcleod_api_url
         self.api_token = settings.mcleod_api_token
