@@ -15,7 +15,6 @@ settings = get_settings()
 
 
 class HealthStatus(str, Enum):
-    """Health check status values."""
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -54,8 +53,6 @@ class ComponentHealth:
 
 
 class HealthCheckService:
-    """Service for checking system health."""
-    
     def __init__(self, db: Optional[Session] = None):
         self.db = db
 
