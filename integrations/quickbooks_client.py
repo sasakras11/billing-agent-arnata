@@ -13,7 +13,6 @@ settings = get_settings()
 
 
 class QBCustomer(BaseModel):
-    """QuickBooks customer."""
     id: str
     display_name: str
     email: Optional[str] = None
@@ -22,7 +21,6 @@ class QBCustomer(BaseModel):
 
 
 class QBInvoice(BaseModel):
-    """QuickBooks invoice."""
     id: str
     doc_number: str
     customer_id: str
@@ -34,7 +32,6 @@ class QBInvoice(BaseModel):
 
 
 class QBLineItem(BaseModel):
-    """QuickBooks invoice line item."""
     description: str
     amount: float
     quantity: float = 1.0
@@ -43,8 +40,6 @@ class QBLineItem(BaseModel):
 
 
 class QuickBooksClient:
-    """Client for QuickBooks Online API."""
-    
     SANDBOX_BASE_URL = "https://sandbox-quickbooks.api.intuit.com/v3"
     PRODUCTION_BASE_URL = "https://quickbooks.api.intuit.com/v3"
     
