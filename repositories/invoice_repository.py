@@ -3,7 +3,7 @@ from typing import List, Optional
 from datetime import date
 
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, or_, func, update
 
 from models import Invoice, InvoiceStatus, Charge
 from repositories.base import BaseRepository
@@ -112,6 +112,26 @@ class InvoiceRepository(BaseRepository[Invoice]):
     def mark_as_sent(self, invoice_id: int) -> Optional[Invoice]:
         """Mark invoice as sent."""
         return self.update(invoice_id, status=InvoiceStatus.SENT)
+
+    def mark_overdue_invoices(self, as_of_date: Optional[date] = None) -> int:
+        """Bulk-mark sent invoices past their due date as OVERDUE; returns count updated."""
+        if as_of_date is None:
+            as_of_date = date.today()
+        result = self.db.execute(
+            update(Invoice)
+            .where(
+                and_(
+                    Invoice.due_date < as_of_date,
+                    Invoice.status.in_([InvoiceStatus.SENT, InvoiceStatus.PENDING_APPROVAL]),
+                )
+            )
+            .values(status=InvoiceStatus.OVERDUE)
+        )
+        self.db.commit()
+        count = result.rowcount
+        if count:
+            logger.info(f"Marked {count} invoices as overdue as of {as_of_date}")
+        return count
 
     def void_invoice(self, invoice_id: int, reason: Optional[str] = None) -> Optional[Invoice]:
         """Void an invoice, preventing further payment or editing."""
