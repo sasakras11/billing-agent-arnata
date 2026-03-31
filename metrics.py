@@ -387,6 +387,5 @@ class MetricsCollector:
 
 
 def get_metrics_collector(db: Session) -> MetricsCollector:
-    """Return a MetricsCollector instance."""
     return MetricsCollector(db)
 

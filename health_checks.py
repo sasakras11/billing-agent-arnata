@@ -246,6 +246,5 @@ class HealthCheckService:
 
 
 def get_health_check_service(db: Optional[Session] = None) -> HealthCheckService:
-    """Return a HealthCheckService instance."""
     return HealthCheckService(db=db)
 
