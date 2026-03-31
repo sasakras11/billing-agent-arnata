@@ -18,6 +18,7 @@ class InvoiceStatus(str, Enum):
     OVERDUE = "overdue"
     DISPUTED = "disputed"
     CANCELLED = "cancelled"
+    VOIDED = "voided"
 
 
 class Invoice(Base):

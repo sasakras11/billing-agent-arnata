@@ -112,3 +112,21 @@ class InvoiceRepository(BaseRepository[Invoice]):
     def mark_as_sent(self, invoice_id: int) -> Optional[Invoice]:
         """Mark invoice as sent."""
         return self.update(invoice_id, status=InvoiceStatus.SENT)
+
+    def void_invoice(self, invoice_id: int, reason: Optional[str] = None) -> Optional[Invoice]:
+        """Void an invoice, preventing further payment or editing."""
+        invoice = self.get_by_id(invoice_id)
+        if not invoice:
+            return None
+        if invoice.status == InvoiceStatus.PAID:
+            logger.warning(f"Cannot void paid invoice {invoice.invoice_number}")
+            return None
+        invoice.status = InvoiceStatus.VOIDED
+        if reason:
+            invoice.internal_notes = (
+                f"{invoice.internal_notes}\nVoided: {reason}".strip()
+            )
+        self.db.commit()
+        self.db.refresh(invoice)
+        logger.info(f"Voided invoice {invoice.invoice_number}")
+        return invoice
